@@ -55,7 +55,8 @@ struct BigCallbacks {
 
 struct VscCallback {
   virtual ~VscCallback() = default;
-  virtual void OnVscEvent(uint16_t delay, uint8_t mode) = 0;
+  virtual void OnVscEvent(uint16_t delay, uint8_t mode,
+                          uint64_t bdAddr) = 0;
 };
 }  // namespace iso_manager
 
@@ -233,7 +234,8 @@ class IsoManager {
   virtual void HandleHciEvent(uint8_t sub_code, uint8_t* params,
                               uint16_t length);
 
-  virtual void HandleVSCodecSettingsEvent(uint8_t mode, uint16_t delay);
+  virtual void HandleVSCodecSettingsEvent(uint8_t mode, uint16_t delay,
+                                          uint64_t bdAddr);
   /**
    * Starts the IsoManager module
    */

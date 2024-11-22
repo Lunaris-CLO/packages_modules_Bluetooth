@@ -550,6 +550,7 @@ public class A2dpService extends ProfileService {
      * @return true on success, otherwise false
      */
     public boolean removeActiveDevice(boolean stopAudio) {
+        boolean forceStopPlayingAudio = false;
         synchronized (mActiveSwitchingGuard) {
             BluetoothDevice previousActiveDevice = null;
             synchronized (mStateMachines) {
@@ -559,11 +560,19 @@ public class A2dpService extends ProfileService {
             }
             updateAndBroadcastActiveDevice(null);
 
+            Log.d(TAG," removeActiveDevice(): previousActiveDevice: " + previousActiveDevice +
+                      " stopAudio:  " + stopAudio);
+
+            forceStopPlayingAudio =
+                (stopAudio || (getConnectionState(previousActiveDevice)
+                                           != BluetoothProfile.STATE_CONNECTED));
+            Log.d(TAG," removeActiveDevice(): forceStopPlayingAudio:  " + forceStopPlayingAudio);
+
             // Make sure the Audio Manager knows the previous active device is no longer active.
             mAudioManager.handleBluetoothActiveDeviceChanged(
                     null,
                     previousActiveDevice,
-                    BluetoothProfileConnectionInfo.createA2dpInfo(!stopAudio, -1));
+                    BluetoothProfileConnectionInfo.createA2dpInfo(!forceStopPlayingAudio, -1));
 
             synchronized (mStateMachines) {
                 // Make sure the Active device in native layer is set to null and audio is off

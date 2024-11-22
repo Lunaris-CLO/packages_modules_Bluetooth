@@ -138,9 +138,10 @@ void IsoManager::HandleHciEvent(uint8_t sub_code, uint8_t* params,
   pimpl_->HandleHciEvent(sub_code, params, length);
 }
 
-void IsoManager::HandleVSCodecSettingsEvent(uint8_t mode, uint16_t delay) {
+void IsoManager::HandleVSCodecSettingsEvent(uint8_t mode, uint16_t delay,
+                                            uint64_t bdAddr) {
   if (!pimpl_) return;
-  pimpl_->HandleVSCodecSettingsEvent(mode, delay);
+  pimpl_->HandleVSCodecSettingsEvent(mode, delay, bdAddr);
 }
 
 void IsoManager::Start() {

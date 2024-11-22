@@ -208,6 +208,12 @@ void btm_set_packet_types_from_address(const RawAddress& bda,
 
 bool BTM_BLE_IS_RESOLVE_BDA(const RawAddress& x);
 
+/*  most significant bit, bit7, bit6 is 11 to be random static address*/
+#define BLE_RANDOM_STATIC_ADDR_MSB 0xc0
+#define BLE_RANDOM_STATIC_ADDR_MSB_MASK 0xc0
+
+bool BTM_BLE_IS_RANDOM_STATIC_BDA(const RawAddress& x);
+
 bool acl_refresh_remote_address(const RawAddress& identity_address,
                                 tBLE_ADDR_TYPE identity_address_type,
                                 const RawAddress& remote_bda,

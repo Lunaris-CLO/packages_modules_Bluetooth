@@ -364,6 +364,10 @@ void bta_dm_ble_subrate_request(const RawAddress& bd_addr, uint16_t subrate_min,
                                 uint16_t subrate_max, uint16_t max_latency,
                                 uint16_t cont_num, uint16_t timeout);
 
+void bta_dm_disable_timer_cback(void);
+void bta_dm_bredr_cleanup(void);
+void bta_dm_bredr_startup(void);
+
 namespace fmt {
 template <>
 struct formatter<tBTA_DM_CONN_STATE> : enum_formatter<tBTA_DM_CONN_STATE> {};

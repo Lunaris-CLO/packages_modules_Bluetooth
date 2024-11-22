@@ -1468,6 +1468,7 @@ void Device::GetItemAttributesNowPlayingResponse(
     info = song_list.front();
   } else {
     for (const auto& temp : song_list) {
+      log::verbose("Send out the multiple songs in the queue");
       if (temp.media_id == media_id) {
         info = temp;
       }
@@ -1481,8 +1482,12 @@ void Device::GetItemAttributesNowPlayingResponse(
 
   auto attributes_requested = pkt->GetAttributesRequested();
   if (attributes_requested.size() != 0) {
+    log::verbose("Attribute requested size > 0 ");
     for (const auto& attribute : attributes_requested) {
       if (info.attributes.find(attribute) != info.attributes.end()) {
+        log::verbose("Attribute responded here with attribute: {}, value: {}, size: {}",
+        info.attributes.find(attribute)->attribute(), info.attributes.find(attribute)->value(),
+        info.attributes.find(attribute)->size());
         builder->AddAttributeEntry(*info.attributes.find(attribute));
       }
     }
@@ -1490,6 +1495,8 @@ void Device::GetItemAttributesNowPlayingResponse(
     // If zero attributes were requested, that means all attributes were
     // requested
     for (const auto& attribute : info.attributes) {
+      log::verbose("Attribute responded here with attribute: {}, value: {}, size: {}",
+                attribute.attribute(), attribute.value(), attribute.size());
       builder->AddAttributeEntry(attribute);
     }
   }

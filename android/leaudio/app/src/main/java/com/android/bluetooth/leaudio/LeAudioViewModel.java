@@ -125,6 +125,10 @@ public class LeAudioViewModel extends AndroidViewModel {
         bluetoothProxy.connectBass(sink, connect);
     }
 
+    public void connectVc(BluetoothDevice device, boolean connect) {
+        bluetoothProxy.connectVc(device, connect);
+    }
+
     public boolean stopBroadcastObserving() {
         return bluetoothProxy.stopBroadcastObserving();
     }

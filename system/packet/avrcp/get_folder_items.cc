@@ -163,7 +163,7 @@ void GetFolderItemsResponseBuilder::PushMediaPlayerItem(
   AddPayloadOctets1(pkt, 0x01);
   if (item.browsable_) {
     AddPayloadOctets1(pkt, 0x0C);
-    AddPayloadOctets1(pkt, 0x0a);
+    AddPayloadOctets1(pkt, 0x1a);
   } else {
     AddPayloadOctets1(pkt, 0x04);
     AddPayloadOctets1(pkt, 0x00);

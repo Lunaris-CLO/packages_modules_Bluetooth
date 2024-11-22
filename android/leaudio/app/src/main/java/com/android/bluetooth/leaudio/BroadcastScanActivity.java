@@ -56,7 +56,7 @@ public class BroadcastScanActivity extends AppCompatActivity {
         adapter = new BroadcastItemsAdapter();
         adapter.setOnItemClickListener(
                 broadcastId -> {
-                    mViewModel.scanForBroadcasts(device, false);
+                    //mViewModel.scanForBroadcasts(device, false);
 
                     BluetoothLeBroadcastMetadata broadcast = null;
                     for (BluetoothLeBroadcastMetadata b :

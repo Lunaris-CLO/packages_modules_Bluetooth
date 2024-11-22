@@ -821,8 +821,9 @@ struct iso_impl {
     }
   }
 
-  void on_vs_codec_settings_event(uint8_t mode, uint16_t delay) {
-    vsc_callback_->OnVscEvent(delay, mode);
+  void on_vs_codec_settings_event(uint8_t mode,
+      uint16_t delay, uint64_t bdAddr) {
+    vsc_callback_->OnVscEvent(delay, mode, bdAddr);
   }
 
   void handle_iso_data(BT_HDR* p_msg) {

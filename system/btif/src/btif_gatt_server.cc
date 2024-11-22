@@ -129,6 +129,15 @@ static void btapp_gatts_handle_cback(uint16_t event, char* p_param) {
   log::verbose("Event {}", event);
 
   tBTA_GATTS* p_data = (tBTA_GATTS*)p_param;
+
+  if ((bt_gatt_callbacks == NULL) ||
+      (bt_gatt_callbacks->server == NULL) ||
+      (p_data == NULL)) {
+    log::info("Event {},cleanup done return", event);
+    btapp_gatts_free_req_data(event, p_data);
+    return;
+  }
+
   switch (event) {
     case BTA_GATTS_REG_EVT: {
       HAL_CBACK(bt_gatt_callbacks, server->register_server_cb,
@@ -386,6 +395,7 @@ static bt_status_t btif_gatts_close(int server_if, const RawAddress& bd_addr,
 
 static void on_service_added_cb(tGATT_STATUS status, int server_if,
                                 vector<btgatt_db_element_t> service) {
+  if ((bt_gatt_callbacks != NULL) && (bt_gatt_callbacks->server != NULL))
   HAL_CBACK(bt_gatt_callbacks, server->service_added_cb, status, server_if,
             service.data(), service.size());
 }

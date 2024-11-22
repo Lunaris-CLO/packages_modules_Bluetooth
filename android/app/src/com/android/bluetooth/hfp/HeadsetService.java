@@ -65,6 +65,7 @@ import com.android.bluetooth.BluetoothMetricsProto;
 import com.android.bluetooth.BluetoothStatsLog;
 import com.android.bluetooth.Utils;
 import com.android.bluetooth.a2dp.A2dpService;
+import com.android.bluetooth.tbs.TbsService;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.AudioRoutingManager;
 import com.android.bluetooth.csip.CsipSetCoordinatorService;
@@ -377,11 +378,30 @@ public class HeadsetService extends ProfileService {
     }
 
     void onDeviceStateChanged(HeadsetDeviceState deviceState) {
+        TbsService tbsService = TbsService.getTbsService();
+        if (tbsService != null) {
+            tbsService.updateBearerSignalStrength(2 /*deviceState.mSignal*/);
+        }
         doForEachConnectedStateMachine(
                 stateMachine ->
                         stateMachine.sendMessage(
                                 HeadsetStateMachine.DEVICE_STATE_CHANGED, deviceState));
     }
+
+    void updateBearerTechnology(int bearertech) {
+        TbsService tbsService = TbsService.getTbsService();
+        if (tbsService != null) {
+            tbsService.updateBearerTechnology(bearertech);
+        }
+    }
+
+    void updateBearerName(String bearerName) {
+        TbsService tbsService = TbsService.getTbsService();
+        if (tbsService != null) {
+            tbsService.updateBearerName(bearerName);
+        }
+    }
+
 
     /**
      * Handle messages from native (JNI) to Java. This needs to be synchronized to avoid posting

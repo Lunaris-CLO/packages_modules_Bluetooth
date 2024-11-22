@@ -1227,6 +1227,18 @@ public class BluetoothProxy {
         }
     }
 
+    public void connectVc(BluetoothDevice device, boolean connect) {
+        if (bluetoothVolumeControl != null) {
+            if (connect) {
+                bluetoothVolumeControl.setConnectionPolicy(device,
+                        BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+            } else {
+                bluetoothVolumeControl.setConnectionPolicy(device,
+                        BluetoothProfile.CONNECTION_POLICY_FORBIDDEN);
+            }
+        }
+    }
+
     public boolean scanForBroadcasts(@Nullable BluetoothDevice scanDelegator, boolean scan) {
         if (mBluetoothLeBroadcastAssistant != null) {
             // Note: startSearchingForSources() does not support scanning on behalf of
@@ -1320,7 +1332,8 @@ public class BluetoothProxy {
         if (bluetoothLeAudio != null && !bluetoothLeAudio.getConnectedDevices().isEmpty()) {
             bluetoothLeAudio.setVolume(volume);
         } else if (bluetoothVolumeControl != null) {
-            bluetoothVolumeControl.setVolumeOffset(device, volume);
+            //bluetoothVolumeControl.setVolumeOffset(device, volume);
+            bluetoothVolumeControl.setDeviceVolume(device, volume, false);
         }
     }
 

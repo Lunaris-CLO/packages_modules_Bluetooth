@@ -1637,7 +1637,8 @@ public class LeAudioService extends ProfileService {
         /*
          * Do not update input if neither previous nor current device support input
          */
-        if (!oldSupportedByDeviceInput && !newSupportedByDeviceInput) {
+        if ((!oldSupportedByDeviceInput && !newSupportedByDeviceInput) &&
+            (!Utils.isBapNoPacsPtsTestMode())) {
             Log.d(TAG, "updateActiveInDevice: Device does not support input.");
             return false;
         }
@@ -1676,7 +1677,13 @@ public class LeAudioService extends ProfileService {
          */
         if (!Objects.equals(device, previousInDevice)
                 || (oldSupportedByDeviceInput != newSupportedByDeviceInput)) {
-            mActiveAudioInDevice = newSupportedByDeviceInput ? device : null;
+
+            if (newSupportedByDeviceInput || Utils.isBapNoPacsPtsTestMode()) {
+                mActiveAudioInDevice = device;
+            } else {
+                mActiveAudioInDevice = null;
+            }
+
             Log.d(
                     TAG,
                     " handleBluetoothActiveDeviceChanged previousInDevice: "
@@ -1704,7 +1711,8 @@ public class LeAudioService extends ProfileService {
         /*
          * Do not update output if neither previous nor current device support output
          */
-        if (!oldSupportedByDeviceOutput && !newSupportedByDeviceOutput) {
+        if ((!oldSupportedByDeviceOutput && !newSupportedByDeviceOutput) &&
+            (!Utils.isBapNoPacsPtsTestMode())) {
             Log.d(TAG, "updateActiveOutDevice: Device does not support output.");
             return false;
         }
@@ -1749,7 +1757,13 @@ public class LeAudioService extends ProfileService {
          */
         if (!Objects.equals(device, previousOutDevice)
                 || (oldSupportedByDeviceOutput != newSupportedByDeviceOutput)) {
-            mActiveAudioOutDevice = newSupportedByDeviceOutput ? device : null;
+
+            if (newSupportedByDeviceOutput || Utils.isBapNoPacsPtsTestMode()) {
+                mActiveAudioOutDevice = device;
+            } else {
+                mActiveAudioOutDevice = null;
+            }
+
             Log.d(
                     TAG,
                     " handleBluetoothActiveDeviceChanged previousOutDevice: "

@@ -444,7 +444,7 @@ public class HidHostService extends ProfileService {
         if (!Flags.allowSwitchingHidAndHogp()) {
             return;
         }
-        BluetoothDevice device = mAdapterService.getDeviceFromByte((byte[]) msg.obj);
+        BluetoothDevice device = (BluetoothDevice) msg.obj;
 
         Bundle data = msg.getData();
         String report = data.getString(BluetoothHidHost.EXTRA_REPORT);

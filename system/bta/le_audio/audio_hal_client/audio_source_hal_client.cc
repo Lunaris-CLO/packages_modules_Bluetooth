@@ -64,7 +64,7 @@ class SourceImpl : public LeAudioSourceAudioHalClient {
              DsaModes dsa_modes) override;
   void Stop() override;
   void ConfirmSuspendRequest() override;
-  void ConfirmStreamingRequest() override;
+  void ConfirmStreamingRequest(bool force) override;
   void CancelStreamingRequest() override;
   void UpdateRemoteDelay(uint16_t remote_delay_ms) override;
   void UpdateAudioConfigToHal(
@@ -421,7 +421,7 @@ void SourceImpl::ConfirmSuspendRequest() {
   halSinkInterface_->ConfirmSuspendRequest();
 }
 
-void SourceImpl::ConfirmStreamingRequest() {
+void SourceImpl::ConfirmStreamingRequest(bool force) {
   if ((halSinkInterface_ == nullptr) ||
       (le_audio_sink_hal_state_ != HAL_STARTED)) {
     log::error("Audio HAL Audio sink was not started!");
@@ -430,9 +430,9 @@ void SourceImpl::ConfirmStreamingRequest() {
 
   log::info("");
   if (com::android::bluetooth::flags::leaudio_start_stream_race_fix()) {
-    halSinkInterface_->ConfirmStreamingRequestV2();
+    halSinkInterface_->ConfirmStreamingRequestV2(force);
   } else {
-    halSinkInterface_->ConfirmStreamingRequest();
+    halSinkInterface_->ConfirmStreamingRequest(force);
   }
   if (CodecManager::GetInstance()->GetCodecLocation() !=
       types::CodecLocation::HOST)

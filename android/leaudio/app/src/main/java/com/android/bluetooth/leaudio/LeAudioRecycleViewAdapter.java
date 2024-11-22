@@ -1199,6 +1199,7 @@ public class LeAudioRecycleViewAdapter
 
         // VC View stuff
         private Switch vcConnectionSwitch;
+        private TextView volumeTitle;
         private SeekBar volumeSeekBar;
         private Switch muteSwitch;
         // VC Ext Input stuff
@@ -1678,6 +1679,7 @@ public class LeAudioRecycleViewAdapter
         private void setupVcView(@NonNull View itemView) {
             vcConnectionSwitch = itemView.findViewById(R.id.vc_switch);
             vcConnectionSwitch.setActivated(true);
+            volumeTitle = itemView.findViewById(R.id.volume_title);
             volumeSeekBar = itemView.findViewById(R.id.volume_seek_bar);
             muteSwitch = itemView.findViewById(R.id.mute_switch);
             muteSwitch.setActivated(true);
@@ -1733,6 +1735,8 @@ public class LeAudioRecycleViewAdapter
                         @Override
                         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                             // Nothing to do here
+                            String volume = "Volume: " + String.valueOf(seekBar.getProgress());
+                            volumeTitle.setText(volume);
                         }
 
                         @Override

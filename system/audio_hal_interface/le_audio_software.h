@@ -96,9 +96,9 @@ class LeAudioClientInterface {
     virtual void StartSession() = 0;
     virtual void StopSession() = 0;
     virtual void ConfirmSuspendRequest() = 0;
-    virtual void ConfirmStreamingRequest() = 0;
+    virtual void ConfirmStreamingRequest(bool force) = 0;
     virtual void CancelStreamingRequest() = 0;
-    virtual void ConfirmStreamingRequestV2() = 0;
+    virtual void ConfirmStreamingRequestV2(bool force) = 0;
     virtual void CancelStreamingRequestV2() = 0;
     virtual void UpdateAudioConfigToHal(
         const ::bluetooth::le_audio::offload_config& config) = 0;
@@ -118,9 +118,9 @@ class LeAudioClientInterface {
     void StartSession() override;
     void StopSession() override;
     void ConfirmSuspendRequest() override;
-    void ConfirmStreamingRequest() override;
+    void ConfirmStreamingRequest(bool force) override;
     void CancelStreamingRequest() override;
-    void ConfirmStreamingRequestV2() override;
+    void ConfirmStreamingRequestV2(bool force) override;
     void CancelStreamingRequestV2() override;
     void UpdateAudioConfigToHal(
         const ::bluetooth::le_audio::offload_config& config) override;
@@ -157,9 +157,9 @@ class LeAudioClientInterface {
     void StartSession() override;
     void StopSession() override;
     void ConfirmSuspendRequest() override;
-    void ConfirmStreamingRequest() override;
+    void ConfirmStreamingRequest(bool force) override;
     void CancelStreamingRequest() override;
-    void ConfirmStreamingRequestV2() override;
+    void ConfirmStreamingRequestV2(bool force) override;
     void CancelStreamingRequestV2() override;
     void UpdateAudioConfigToHal(
         const ::bluetooth::le_audio::offload_config& config) override;

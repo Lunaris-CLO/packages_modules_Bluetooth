@@ -116,6 +116,7 @@ using bluetooth::le_audio::utils::GetAudioContextsFromSourceMetadata;
 
 using namespace bluetooth;
 
+
 /* Enums */
 enum class AudioReconfigurationResult {
   RECONFIGURATION_NEEDED = 0x00,
@@ -200,7 +201,99 @@ VscCallback* stateMachineVscHciCallback;
 LeAudioGroupStateMachine::Callbacks* stateMachineCallbacks;
 DeviceGroupsCallbacks* device_group_callbacks;
 LeAudioIsoDataCallback* iso_data_callback;
-constexpr uint16_t HCI_VS_QBCE_OCF = 0xFC51;
+constexpr uint16_t HCI_VS_QBCE_OCF                      = 0xFC51;
+constexpr uint8_t  LTV_TYPE_VS_METADATA                 = 0xFF;
+constexpr uint8_t  LTV_TYPE_VS_METADATA_FE              = 0xFE;
+
+constexpr uint8_t  LTV_TYPE_MIN_FT                      = 0X00;
+constexpr uint8_t  LTV_TYPE_MIN_BIT_RATE                = 0X01;
+constexpr uint8_t  LTV_TYPE_MIN_MAX_ERROR_RESILIENCE    = 0X02;
+constexpr uint8_t  LTV_TYPE_LATENCY_MODE                = 0X03;
+constexpr uint8_t  LTV_TYPE_MAX_FT                      = 0X04;
+
+constexpr uint8_t  LTV_LEN_MIN_FT                       = 0X01;
+constexpr uint8_t  LTV_LEN_MIN_BIT_RATE                 = 0X01;
+constexpr uint8_t  LTV_LEN_MIN_MAX_ERROR_RESILIENCE     = 0X01;
+constexpr uint8_t  LTV_LEN_LATENCY_MODE                 = 0X01;
+constexpr uint8_t  LTV_LEN_MAX_FT                       = 0X01;
+
+constexpr uint8_t  ENCODER_LIMITS_SUB_OP                = 0x24;
+
+typedef struct {
+  uint8_t cig_id;
+  uint8_t cis_id;
+  std::vector<uint8_t> encoder_params;
+  uint8_t encoder_mode;
+} tBTM_BLE_SET_ENCODER_LIMITS_PARAM;
+
+uint8_t* PrepareSetEncoderLimitsPayload(tBTM_BLE_SET_ENCODER_LIMITS_PARAM *params,
+                                        uint8_t *length, uint8_t *p) {
+  uint8_t param_len = 0;
+  uint8_t size = params->encoder_params.size();
+  uint8_t num_limits = (size == 0) ? 1 : size;
+  LOG(INFO) <<__func__  << "num_limits = "<<loghex(num_limits);
+  LOG(INFO) <<__func__  << "params->cig_id = "<<loghex(params->cig_id);
+  LOG(INFO) <<__func__  << "params->cis_id = "<<loghex(params->cis_id);
+  UINT8_TO_STREAM(p, ENCODER_LIMITS_SUB_OP); //sub-opcode
+  param_len++;
+  UINT8_TO_STREAM(p, params->cig_id);
+  param_len++;
+  UINT8_TO_STREAM(p, params->cis_id);
+  param_len++;
+  UINT8_TO_STREAM(p, num_limits); //numlimits
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_TYPE_MIN_FT);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_LEN_MIN_FT);
+  param_len++;
+  UINT8_TO_STREAM(p, params->encoder_params[0]);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_TYPE_MIN_BIT_RATE);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_LEN_MIN_BIT_RATE);
+  param_len++;
+  UINT8_TO_STREAM(p, params->encoder_params[2]);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_TYPE_MIN_MAX_ERROR_RESILIENCE);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_LEN_MIN_MAX_ERROR_RESILIENCE);
+  param_len++;
+  UINT8_TO_STREAM(p, params->encoder_params[3]);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_TYPE_LATENCY_MODE);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_LEN_LATENCY_MODE);
+  param_len++;
+  UINT8_TO_STREAM(p, params->encoder_params[4]);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_TYPE_MAX_FT);
+  param_len++;
+  UINT8_TO_STREAM(p, LTV_LEN_MAX_FT);
+  param_len++;
+  UINT8_TO_STREAM(p, params->encoder_params[1]);
+  param_len++;
+  *length = param_len;
+  LOG(INFO) <<__func__  << "param_len = "<<loghex(param_len);
+  return p;
+}
+
+void UpdateEncoderParams(uint8_t cig_id, uint8_t cis_id,
+                                 std::vector<uint8_t> encoder_limit_params) {
+  tBTM_BLE_SET_ENCODER_LIMITS_PARAM encoder_params = {
+                                       .cig_id = cig_id,
+                                       .cis_id = cis_id,
+                                       .encoder_params = encoder_limit_params};
+    uint8_t length = 0;
+    uint8_t size = 1;
+    if (encoder_params.encoder_params.size())
+      size = encoder_params.encoder_params.size();
+    uint16_t len = 4 + size * 3;
+    LOG(INFO) <<__func__  << "len = "<<loghex(len);
+    uint8_t param_arr[len];
+    uint8_t *param = param_arr;
+    PrepareSetEncoderLimitsPayload(&encoder_params, &length, param);
+    bluetooth::legacy::hci::GetInterface().SendVendorSpecificCmd(HCI_VS_QBCE_OCF, length, param, NULL);
+}
 
 /*
  * Coordinatet Set Identification Profile (CSIP) based on CSIP 1.0
@@ -1108,12 +1201,14 @@ class LeAudioClientImpl : public LeAudioClient {
         bluetooth::le_audio::btle_audio_codec_index_t::LE_AUDIO_CODEC_INDEX_SOURCE_APTX_LEX) {
       group->DisableLeXCodec(false);
       log::debug("Enabling LeX Codec");
-      group->UpdateAudioSetConfigurationCache(group->GetConfigurationContextType());
+      group->UpdateAudioSetConfigurationCache(LeAudioContextType::MEDIA);
+      group->UpdateAudioSetConfigurationCache(LeAudioContextType::CONVERSATIONAL);
     } else if (output_codec_config.codec_type ==
         bluetooth::le_audio::btle_audio_codec_index_t::LE_AUDIO_CODEC_INDEX_SOURCE_DEFAULT) {
       group->DisableLeXCodec(true);
       log::debug("Disabling LeX Codec");
-      group->UpdateAudioSetConfigurationCache(group->GetConfigurationContextType());
+      group->UpdateAudioSetConfigurationCache(LeAudioContextType::MEDIA);
+      group->UpdateAudioSetConfigurationCache(LeAudioContextType::CONVERSATIONAL);
     } else {
       log::debug("Disallow param changes for LC3 triggered by ALS");
       return;
@@ -2690,7 +2785,18 @@ class LeAudioClientImpl : public LeAudioClient {
       log::error(", skipping unknown leAudioDevice, address: {}", address);
       return;
     }
-
+    if (!lexAvailableTransportDevices_.empty()) {
+      auto it = std::find(lexAvailableTransportDevices_.begin(),
+          lexAvailableTransportDevices_.end(), address);
+      if (it !=
+          lexAvailableTransportDevices_.end()) {
+          log::info("found device in lexAvailableTransportDevices to remove.");
+          lexAvailableTransportDevices_.erase(
+            std::remove(lexAvailableTransportDevices_.begin(),
+            lexAvailableTransportDevices_.end(), (*it)),
+            lexAvailableTransportDevices_.end());
+      }
+    }
     leAudioDevice->acl_asymmetric_ = false;
     BtaGattQueue::Clean(leAudioDevice->conn_id_);
     LeAudioDeviceGroup* group = aseGroups_.FindById(leAudioDevice->group_id_);
@@ -3973,8 +4079,8 @@ class LeAudioClientImpl : public LeAudioClient {
     if (written != to_write) log::error("not all data sinked");
   }
 
-  void ConfirmLocalAudioSourceStreamingRequest() {
-    le_audio_source_hal_client_->ConfirmStreamingRequest();
+  void ConfirmLocalAudioSourceStreamingRequest(bool force) {
+    le_audio_source_hal_client_->ConfirmStreamingRequest(force);
 
     LeAudioLogHistory::Get()->AddLogHistory(
         kLogBtCallAf, active_group_id_, RawAddress::kEmpty,
@@ -3984,8 +4090,8 @@ class LeAudioClientImpl : public LeAudioClient {
     audio_sender_state_ = AudioState::STARTED;
   }
 
-  void ConfirmLocalAudioSinkStreamingRequest() {
-    le_audio_sink_hal_client_->ConfirmStreamingRequest();
+  void ConfirmLocalAudioSinkStreamingRequest(bool force) {
+    le_audio_sink_hal_client_->ConfirmStreamingRequest(force);
 
     LeAudioLogHistory::Get()->AddLogHistory(
         kLogBtCallAf, active_group_id_, RawAddress::kEmpty,
@@ -4058,7 +4164,7 @@ class LeAudioClientImpl : public LeAudioClient {
     }
 
     le_audio_source_hal_client_->UpdateRemoteDelay(remote_delay_ms);
-    ConfirmLocalAudioSourceStreamingRequest();
+    ConfirmLocalAudioSourceStreamingRequest(false);
 
     if (!LeAudioHalVerifier::SupportsStreamActiveApi()) {
       /* We update the target audio allocation before streamStarted so that the
@@ -4078,8 +4184,11 @@ class LeAudioClientImpl : public LeAudioClient {
     if ((configuration_context_type_ == LeAudioContextType::MEDIA) ||
         (configuration_context_type_ == LeAudioContextType::GAME)) {
       // Send vendor specific command for codec mode
-      uint16_t update_value =
-          (configuration_context_type_ == LeAudioContextType::MEDIA) ? 0x1 : 0x2;
+      uint8_t update_value =
+          (configuration_context_type_ == LeAudioContextType::MEDIA) ? 0x01 : 0x02;
+
+      log::warn("Send VSC Cmd for Encoder Limits for group {}, mode value {}",
+              group_id, update_value);
       uint8_t param_arr[7];
       uint8_t *p = param_arr;
 
@@ -4096,6 +4205,13 @@ class LeAudioClientImpl : public LeAudioClient {
           HCI_VS_QBCE_OCF, 7, param_arr, NULL);
     }
 
+    if (device->GetFirstActiveAse()->is_vsmetadata_available) {
+      for (struct bluetooth::le_audio::types::cis& cis : group->cig.cises) {
+        UpdateEncoderParams(group_id, cis.id,
+            device->GetFirstActiveAse()->metadata);
+        device->GetFirstActiveAse()->is_vsmetadata_available = false;
+      }
+    }
   }
 
   const struct bluetooth::le_audio::stream_configuration*
@@ -4159,7 +4275,7 @@ class LeAudioClientImpl : public LeAudioClient {
       }
     }
     le_audio_sink_hal_client_->UpdateRemoteDelay(remote_delay_ms);
-    ConfirmLocalAudioSinkStreamingRequest();
+    ConfirmLocalAudioSinkStreamingRequest(false);
 
     if (!LeAudioHalVerifier::SupportsStreamActiveApi()) {
       /* We update the target audio allocation before streamStarted so that the
@@ -4334,6 +4450,22 @@ class LeAudioClientImpl : public LeAudioClient {
     return AudioReconfigurationResult::RECONFIGURATION_NEEDED;
   }
 
+  bool isLeXtransportAvailable(LeAudioDeviceGroup* group) {
+     LeAudioDevice* leAudioDevice = group->GetFirstDevice();
+     if (!leAudioDevice) return false;
+     do {
+       auto address = leAudioDevice->address_;
+       auto it = std::find(lexAvailableTransportDevices_.begin(),
+           lexAvailableTransportDevices_.end(), address);
+       if (it != lexAvailableTransportDevices_.end()) {
+           log::info("LeX transport available to stream.");
+           return true;
+       }
+     } while ((leAudioDevice = group->GetNextDevice(leAudioDevice)));
+     log::info("No transport is available.");
+     return false;
+  }
+
   /* Returns true if stream is started */
   bool OnAudioResume(LeAudioDeviceGroup* group, int local_direction) {
     auto remote_direction =
@@ -4389,6 +4521,10 @@ class LeAudioClientImpl : public LeAudioClient {
         leAudioHealthStatus_->AddStatisticForGroup(
             group, LeAudioHealthGroupStatType::STREAM_CONTEXT_NOT_AVAILABLE);
       }
+      return false;
+    }
+
+    if (group->GetFirstDevice()->isLeXDevice() && !isLeXtransportAvailable(group)) {
       return false;
     }
 
@@ -4575,7 +4711,7 @@ class LeAudioClientImpl : public LeAudioClient {
     switch (audio_sender_state_) {
       case AudioState::STARTED:
         /* Looks like previous Confirm did not get to the Audio Framework*/
-        ConfirmLocalAudioSourceStreamingRequest();
+        ConfirmLocalAudioSourceStreamingRequest(false);
         break;
       case AudioState::IDLE:
         switch (audio_receiver_state_) {
@@ -4704,7 +4840,7 @@ class LeAudioClientImpl : public LeAudioClient {
             /* Stream is up just restore it */
             if (alarm_is_scheduled(suspend_timeout_))
               alarm_cancel(suspend_timeout_);
-            ConfirmLocalAudioSourceStreamingRequest();
+            ConfirmLocalAudioSourceStreamingRequest(false);
             bluetooth::le_audio::MetricsCollector::Get()->OnStreamStarted(
                 active_group_id_, configuration_context_type_);
             break;
@@ -4895,7 +5031,7 @@ class LeAudioClientImpl : public LeAudioClient {
 
     switch (audio_receiver_state_) {
       case AudioState::STARTED:
-        ConfirmLocalAudioSinkStreamingRequest();
+        ConfirmLocalAudioSinkStreamingRequest(false);
         break;
       case AudioState::IDLE:
         switch (audio_sender_state_) {
@@ -5024,7 +5160,7 @@ class LeAudioClientImpl : public LeAudioClient {
             /* Stream is up just restore it */
             if (alarm_is_scheduled(suspend_timeout_))
               alarm_cancel(suspend_timeout_);
-            ConfirmLocalAudioSinkStreamingRequest();
+            ConfirmLocalAudioSinkStreamingRequest(false);
             break;
           case AudioState::RELEASING:
             /* Wait until releasing is completed */
@@ -5967,17 +6103,45 @@ class LeAudioClientImpl : public LeAudioClient {
         group, leAudioDevice, status, conn_handle);
   }
 
-  void QhciVscEvt(uint16_t delay, uint8_t mode) {
+  void updateLexAvailableTransportDevices(uint64_t bdAddr) {
+    if (bdAddr != 0xFFFFFFFFFFFFFFFF) {
+      RawAddress rawAddress;
+      uint8_t addr[] = {static_cast<uint8_t>((bdAddr >> 40) & 0xFF),
+                        static_cast<uint8_t>((bdAddr >> 32) & 0xFF),
+                        static_cast<uint8_t>((bdAddr >> 24) & 0xFF),
+                        static_cast<uint8_t>((bdAddr >> 16) & 0xFF),
+                        static_cast<uint8_t>((bdAddr >> 8) & 0xFF),
+                        static_cast<uint8_t>((bdAddr) & 0xFF)};
+      rawAddress.FromOctets((uint8_t*)addr);
+      log::info("Updating Transport device {}", rawAddress.ToString());
+      lexAvailableTransportDevices_.push_back(rawAddress);
+    }
+  }
+
+  void QhciVscEvt(uint16_t delay, uint8_t mode, uint64_t bdAddr) {
+    updateLexAvailableTransportDevices(bdAddr);
     auto group = aseGroups_.FindById(active_group_id_);
     if (!group) {
       log::error("Invalid group: {}", active_group_id_);
       return;
     }
-    log::warn("QhciVscEvt: {} delay {} mode.", delay, mode);
-    if (delay != 0xFFFF)
-      group->stream_conf.stream_params.sink.delay = delay;
-    if (mode != 0xFF)
+    log::warn("{} delay {} mode.", delay, mode);
+    if (mode != 0xFF) {
       group->stream_conf.stream_params.sink.mode = mode;
+    }
+    if (delay != 0xFFFF) {
+      log::warn("updating delay to bt audio hal");
+      group->UpdateCisConfiguration(bluetooth::le_audio::types::kLeAudioDirectionSink);
+      BidirectionalPair<uint16_t> delays_pair = {
+        .sink = delay,
+        .source = 0};
+      CodecManager::GetInstance()->UpdateActiveAudioConfig(
+        group->stream_conf.stream_params, delays_pair, group->stream_conf.codec_id,
+        std::bind(&LeAudioClientImpl::UpdateAudioConfigToHal,
+                  weak_factory_.GetWeakPtr(), std::placeholders::_1,
+                  std::placeholders::_2));
+      ConfirmLocalAudioSourceStreamingRequest(true);
+    }
   }
 
   void IsoLinkQualityReadCb(
@@ -6521,6 +6685,8 @@ class LeAudioClientImpl : public LeAudioClient {
 
   std::map<int, GroupStreamStatus> lastNotifiedGroupStreamStatusMap_;
 
+  std::vector<RawAddress> lexAvailableTransportDevices_;
+
   void ClientAudioInterfaceRelease() {
     auto group = aseGroups_.FindById(active_group_id_);
     if (!group) {
@@ -6758,8 +6924,8 @@ LeAudioStateMachineHciCallbacksImpl stateMachineHciCallbacksImpl;
 
 class LeAudioStateMachineVscHciCallbackImpl : public VscCallback {
   public:
-    void OnVscEvent(uint16_t delay, uint8_t mode) override {
-      if (instance) instance->QhciVscEvt(delay, mode);
+    void OnVscEvent(uint16_t delay, uint8_t mode, uint64_t bdAddr) override {
+      if (instance) instance->QhciVscEvt(delay, mode, bdAddr);
     }
 };
 

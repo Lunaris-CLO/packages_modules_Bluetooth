@@ -105,6 +105,7 @@
 #include "storage/config_keys.h"
 #include "types/raw_address.h"
 #include "stack/include/btm_api_types.h"
+#include "bta/dm/bta_dm_int.h"
 
 #ifdef __ANDROID__
 #include <android/sysprop/BluetoothProperties.sysprop.h>
@@ -376,6 +377,15 @@ void btif_dm_sdp_delay_timer(const RawAddress *bl_bdaddr) {
 bt_status_t btif_in_execute_service_request(tBTA_SERVICE_ID service_id,
                                             bool b_enable) {
   log::verbose("service_id:{}", service_id);
+  log::warn("b_enable: {}", b_enable);
+  //bta_dm_clean_
+  if (service_id == BTA_A2DP_SOURCE_SERVICE_ID && !b_enable) {
+    bta_dm_bredr_cleanup();
+  }
+
+  if (service_id == BTA_A2DP_SOURCE_SERVICE_ID && b_enable) {
+    bta_dm_bredr_startup();
+  }
 
   if (service_id == BTA_SDP_SERVICE_ID) {
     btif_sdp_execute_service(b_enable);

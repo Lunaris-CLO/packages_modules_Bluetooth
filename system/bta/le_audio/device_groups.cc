@@ -1047,6 +1047,12 @@ types::LeAudioConfigurationStrategy LeAudioDeviceGroup::GetGroupSinkStrategy()
     /* Choose the group configuration strategy based on PAC records */
     strategy_ = [this]() {
       int expected_group_size = Size();
+      /*
+      * CAP/INI/UST/BV-16-C
+      * CAP/INI/UST/BV-18-C
+      */
+      bool mCapNoAudioLocPts =
+            osi_property_get_bool("persist.bluetooth.cap_no_audio_loc", false);
 
       /* Simple strategy picker */
       log::debug("Group {} size {}", group_id_, expected_group_size);
@@ -1055,10 +1061,10 @@ types::LeAudioConfigurationStrategy LeAudioDeviceGroup::GetGroupSinkStrategy()
       }
 
       log::debug("audio location 0x{:04x}", snk_audio_locations_.to_ulong());
-      if (!(snk_audio_locations_.to_ulong() &
+      if ((!(snk_audio_locations_.to_ulong() &
             codec_spec_conf::kLeAudioLocationAnyLeft) ||
           !(snk_audio_locations_.to_ulong() &
-            codec_spec_conf::kLeAudioLocationAnyRight)) {
+            codec_spec_conf::kLeAudioLocationAnyRight)) && !mCapNoAudioLocPts) {
         log::debug("startgy set to MONO_ONE_CIS_PER_DEVICE");
         return types::LeAudioConfigurationStrategy::MONO_ONE_CIS_PER_DEVICE;
       }
@@ -1070,7 +1076,7 @@ types::LeAudioConfigurationStrategy LeAudioDeviceGroup::GetGroupSinkStrategy()
           device->GetSupportedAudioChannelCounts(types::kLeAudioDirectionSink);
       log::debug("Supported channel counts for group {} (device {}) is {}",
                  group_id_, device->address_, channel_count_bitmap);
-      if (channel_count_bitmap == 1) {
+      if (channel_count_bitmap == 1 || mCapNoAudioLocPts) {
         return types::LeAudioConfigurationStrategy::STEREO_TWO_CISES_PER_DEVICE;
       }
 
@@ -1383,7 +1389,17 @@ bool CheckIfStrategySupported(types::LeAudioConfigurationStrategy strategy,
 
   switch (strategy) {
     case types::LeAudioConfigurationStrategy::MONO_ONE_CIS_PER_DEVICE:
-      return audio_locations.any();
+      //for no audio location use cases in BAP. No ch count, no pacs etc..
+      /*BAP/UCL/STR/BV-554-C
+       * BAP/UCL/STR/BV-555-C
+       * BAP/UCL/STR/BV-558-C
+       * BAP/UCL/STR/BV-559-C
+       */
+      if (osi_property_get_bool("persist.bluetooth.bap.no.pacs.pts", false)) {
+         return true;
+      } else {
+         return audio_locations.any();
+      }
     case types::LeAudioConfigurationStrategy::STEREO_TWO_CISES_PER_DEVICE:
       if ((audio_locations.to_ulong() &
            codec_spec_conf::kLeAudioLocationAnyLeft) &&

@@ -72,6 +72,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * A Bluetooth Handset StateMachine (Disconnected) | ^ CONNECT | | DISCONNECTED V | (Connecting)
@@ -103,6 +104,8 @@ class HeadsetStateMachine extends StateMachine {
     static final int SEND_INCOMING_CALL_IND = 16;
     static final int SCO_RETRIAL_NOT_REQ = 17;
     static final int SEND_CLCC_RESP_AFTER_VOIP_CALL = 18;
+    static final int CS_CALL_STATE_CHANGED_ALERTING = 22;
+    static final int CS_CALL_STATE_CHANGED_ACTIVE = 23;
     static final int STACK_EVENT = 101;
     private static final int CLCC_RSP_TIMEOUT = 104;
 
@@ -111,13 +114,15 @@ class HeadsetStateMachine extends StateMachine {
     private static final int CLCC_RSP_TIMEOUT_MS = 5000;
     // NOTE: the value is not "final" - it is modified in the unit tests
     @VisibleForTesting static int sConnectTimeoutMs = 30000;
-
+    private static final String VOIP_CALL_NUMBER = "10000000";
     // Number of times we should retry disconnecting audio before
     // disconnecting the device.
     private static final int MAX_RETRY_DISCONNECT_AUDIO = 3;
 
     private static final HeadsetAgIndicatorEnableState DEFAULT_AG_INDICATOR_ENABLE_STATE =
             new HeadsetAgIndicatorEnableState(true, true, true, true);
+    private int CS_CALL_ALERTING_DELAY_TIME_MSEC = 800;
+    private int CS_CALL_ACTIVE_DELAY_TIME_MSEC = 10;
     private static final int INCOMING_CALL_IND_DELAY = 200;
     private int RETRY_SCO_CONNECTION_DELAY = 0;
     private int SCO_RETRIAL_REQ_TIMEOUT = 5000;
@@ -155,6 +160,10 @@ class HeadsetStateMachine extends StateMachine {
 
     private int mRetryConnectCount = 0;
     private static final int MAX_RETRY_CONNECT_COUNT = 2;
+
+    //ConcurrentLinkeQueue is used so that it is threadsafe
+    private ConcurrentLinkedQueue<HeadsetCallState> mDelayedCSCallStates =
+                             new ConcurrentLinkedQueue<HeadsetCallState>();
     /* Retry outgoing connection after this time if the first attempt fails */
     private static final int RETRY_CONNECT_TIME_MSEC = 2500;
 
@@ -252,6 +261,13 @@ class HeadsetStateMachine extends StateMachine {
         addState(mAudioConnecting);
         addState(mAudioDisconnecting);
         setInitialState(mDisconnected);
+
+        if (isDeviceBlacklistedForSendingCallIndsBackToBack()) {
+            CS_CALL_ALERTING_DELAY_TIME_MSEC = 0;
+            CS_CALL_ACTIVE_DELAY_TIME_MSEC = 0;
+            Log.w(TAG, "alerting delay " + CS_CALL_ALERTING_DELAY_TIME_MSEC +
+                      " active delay " + CS_CALL_ACTIVE_DELAY_TIME_MSEC);
+        }
     }
 
     static HeadsetStateMachine make(
@@ -632,6 +648,11 @@ class HeadsetStateMachine extends StateMachine {
             mStateMachineCallState.mCallState = 0;
             mStateMachineCallState.mNumber = "";
             mStateMachineCallState.mType = 0;
+
+            // clear pending call states
+            while (mDelayedCSCallStates.isEmpty() != true) {
+                mDelayedCSCallStates.poll();
+            }
 
             broadcastStateTransitions();
             logFailureIfNeeded();
@@ -1171,7 +1192,49 @@ class HeadsetStateMachine extends StateMachine {
                         }
                     }
                     else
-                        processCallState(callState);
+                        processCallStatesDelayed(callState);
+                    break;
+                case CS_CALL_STATE_CHANGED_ALERTING:
+                    {
+                        // get the top of the Q
+                        HeadsetCallState tempCallState = mDelayedCSCallStates.peek();
+                        // top of the queue is call alerting
+                        if(tempCallState != null &&
+                           tempCallState.mCallState == HeadsetHalConstants.CALL_STATE_ALERTING)
+                        {
+                            stateLogD("alerting message timer expired, send alerting update");
+                            //dequeue the alerting call state;
+                            mDelayedCSCallStates.poll();
+                            processCallState(tempCallState);
+                        }
+
+                        // top of the queue == call active
+                        tempCallState = mDelayedCSCallStates.peek();
+                        if (tempCallState != null &&
+                            tempCallState.mCallState == HeadsetHalConstants.CALL_STATE_IDLE)
+                        {
+                            stateLogD("alerting message timer expired, send delayed active mesg");
+                            //send delayed message for call active;
+                            Message msg = obtainMessage(CS_CALL_STATE_CHANGED_ACTIVE);
+                            msg.arg1 = 0;
+                            sendMessageDelayed(msg, CS_CALL_ACTIVE_DELAY_TIME_MSEC);
+                        }
+                    }
+                    break;
+                case CS_CALL_STATE_CHANGED_ACTIVE:
+                    {
+                        // get the top of the Q
+                        // top of the queue == call active
+                        HeadsetCallState tempCallState = mDelayedCSCallStates.peek();
+                        if (tempCallState != null &&
+                            tempCallState.mCallState == HeadsetHalConstants.CALL_STATE_IDLE)
+                        {
+                            stateLogD("active message timer expired, send active update");
+                            //dequeue the active call state;
+                            mDelayedCSCallStates.poll();
+                            processCallState(tempCallState);
+                        }
+                    }
                     break;
                 case DEVICE_STATE_CHANGED:
                     if (mDeviceSilenced) {
@@ -2187,6 +2250,126 @@ class HeadsetStateMachine extends StateMachine {
         }
     }
 
+    private void processCallStatesDelayed(HeadsetCallState callState)
+    {
+        log("Enter processCallStatesDelayed");
+        final HeadsetPhoneState mPhoneState = mSystemInterface.getHeadsetPhoneState();
+        if (callState.mCallState == HeadsetHalConstants.CALL_STATE_DIALING)
+        {
+            // at this point, queue should be empty.
+            processCallState(callState);
+        }
+        // update is for call alerting
+        else if (callState.mCallState == HeadsetHalConstants.CALL_STATE_ALERTING &&
+                  mStateMachineCallState.mNumActive == callState.mNumActive &&
+                  mStateMachineCallState.mNumHeld == callState.mNumHeld &&
+                  mStateMachineCallState.mCallState == HeadsetHalConstants.CALL_STATE_DIALING)
+        {
+            log("Queue alerting update, send alerting delayed mesg");
+            //Q the call state;
+            mDelayedCSCallStates.add(callState);
+
+            //send delayed message for call alerting;
+            Message msg = obtainMessage(CS_CALL_STATE_CHANGED_ALERTING);
+            msg.arg1 = 0;
+            sendMessageDelayed(msg, CS_CALL_ALERTING_DELAY_TIME_MSEC);
+        }
+        // call moved to active from alerting state
+        else if (mStateMachineCallState.mNumActive == 0 &&
+                 callState.mNumActive == 1 &&
+                 mStateMachineCallState.mNumHeld == callState.mNumHeld &&
+                 (mStateMachineCallState.mCallState == HeadsetHalConstants.CALL_STATE_DIALING ||
+                  mStateMachineCallState.mCallState == HeadsetHalConstants.CALL_STATE_ALERTING ))
+        {
+            log("Call moved to active state from alerting");
+            // get the top of the Q
+            HeadsetCallState tempCallState = mDelayedCSCallStates.peek();
+
+            //if (top of the Q == alerting)
+            if( tempCallState != null &&
+                 tempCallState.mCallState == HeadsetHalConstants.CALL_STATE_ALERTING)
+            {
+                log("Call is active, Queue it, top of Queue is alerting");
+                //Q active update;
+                mDelayedCSCallStates.add(callState);
+            }
+            else
+            // Q is empty
+            {
+                log("is Q empty " + mDelayedCSCallStates.isEmpty());
+                log("Call is active, Queue it, send delayed active mesg");
+                //Q active update;
+                mDelayedCSCallStates.add(callState);
+                //send delayed message for call active;
+                Message msg = obtainMessage(CS_CALL_STATE_CHANGED_ACTIVE);
+                msg.arg1 = 0;
+                sendMessageDelayed(msg, CS_CALL_ACTIVE_DELAY_TIME_MSEC);
+            }
+        }
+        // call setup or call ended
+        else if((mStateMachineCallState.mCallState == HeadsetHalConstants.CALL_STATE_DIALING ||
+                  mStateMachineCallState.mCallState == HeadsetHalConstants.CALL_STATE_ALERTING ) &&
+                  callState.mCallState == HeadsetHalConstants.CALL_STATE_IDLE &&
+                  mStateMachineCallState.mNumActive == callState.mNumActive &&
+                  mStateMachineCallState.mNumHeld == callState.mNumHeld)
+        {
+            log("call setup or call is ended");
+            // get the top of the Q
+            HeadsetCallState tempCallState = mDelayedCSCallStates.peek();
+
+            //if (top of the Q == alerting)
+            if(tempCallState != null &&
+                tempCallState.mCallState == HeadsetHalConstants.CALL_STATE_ALERTING)
+            {
+                log("Call is ended, remove delayed alerting mesg");
+                removeMessages(CS_CALL_STATE_CHANGED_ALERTING);
+                //DeQ(alerting);
+                mDelayedCSCallStates.poll();
+                // send 2,3 although the call is ended to make sure that we are sending 2,3 always
+                processCallState(tempCallState);
+
+                // update the top of the Q entry so that we process the active
+                // call entry from the Q below
+                tempCallState = mDelayedCSCallStates.peek();
+            }
+
+            //if (top of the Q == active)
+            if (tempCallState != null &&
+                 tempCallState.mCallState == HeadsetHalConstants.CALL_STATE_IDLE)
+            {
+                log("Call is ended, remove delayed active mesg");
+                removeMessages(CS_CALL_STATE_CHANGED_ACTIVE);
+                //DeQ(active);
+                mDelayedCSCallStates.poll();
+            }
+            // send current call state which will take care of sending call end indicator
+            processCallState(callState);
+        } else {
+            HeadsetCallState tempCallState;
+
+            // if there are pending call states to be sent, send them now
+            if (mDelayedCSCallStates.isEmpty() != true)
+            {
+                log("new call update, removing pending alerting, active messages");
+                // remove pending delayed call states
+                removeMessages(CS_CALL_STATE_CHANGED_ALERTING);
+                removeMessages(CS_CALL_STATE_CHANGED_ACTIVE);
+            }
+
+            while (mDelayedCSCallStates.isEmpty() != true)
+            {
+                tempCallState = mDelayedCSCallStates.poll();
+                if (tempCallState != null)
+                {
+                    processCallState(tempCallState);
+                }
+            }
+            // it is incoming call or MO call in non-alerting, non-active state.
+            processCallState(callState);
+        }
+        log("Exit processCallStatesDelayed");
+    }
+
     private void processCallState(HeadsetCallState callState) {
         /* If active call is ended, no held call is present, disconnect SCO
          * and fake the MT Call indicators. */
@@ -2474,13 +2657,7 @@ class HeadsetStateMachine extends StateMachine {
     void processAtClcc(BluetoothDevice device) {
         if (mHeadsetService.isVirtualCallStarted()) {
             // In virtual call, send our phone number instead of remote phone number
-            String phoneNumber = mSystemInterface.getSubscriberNumber();
-            if (phoneNumber == null) {
-                phoneNumber = "";
-            }
-            if (phoneNumber == ""){
-               phoneNumber = "10000000";
-            }
+            String phoneNumber = VOIP_CALL_NUMBER;
             int type = PhoneNumberUtils.toaFromString(phoneNumber);
             Log.e(TAG, "processAtClcc: voip phoneNumber " + phoneNumber +" voip type " + type);
             mNativeInterface.clccResponse(device, 1, 0, 0, 0, false, phoneNumber, type);
@@ -3031,6 +3208,13 @@ class HeadsetStateMachine extends StateMachine {
            InteropUtil.InteropFeature.INTEROP_RETRY_SCO_AFTER_REMOTE_REJECT_SCO,
            mDevice.getAddress());
        return matched;
+    }
+
+    boolean isDeviceBlacklistedForSendingCallIndsBackToBack() {
+        boolean matched = InteropUtil.interopMatchAddrOrName(
+            InteropUtil.InteropFeature.INTEROP_HFP_SEND_CALL_INDICATORS_BACK_TO_BACK,
+            mDevice.getAddress());
+            return matched;
     }
 
     boolean isSCONeededImmediatelyAfterSLC() {

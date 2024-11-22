@@ -73,7 +73,7 @@ struct MockIsoManager {
   MOCK_METHOD((void), HandleHciEvent,
               (uint8_t sub_code, uint8_t* params, uint16_t length));
   MOCK_METHOD((void), HandleVSCodecSettingsEvent,
-              (uint8_t mode, uint16_t delay));
+              (uint8_t mode, uint16_t delay, uint64_t bdAddr));
 
   MOCK_METHOD((void), Start, ());
   MOCK_METHOD((void), Stop, ());

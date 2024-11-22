@@ -561,11 +561,12 @@ uint8_t BTM_GetQcmPhyState(const RawAddress& bda) {
 void btm_update_codec_settings(uint8_t* p) {
   uint16_t handle, delay = 0xFFFF;
   uint8_t types, mode = 0xFF;
+  uint64_t bdAddr = 0xFFFFFFFFFFFFFFFF;
 
   STREAM_TO_UINT16(handle, p);
   STREAM_TO_UINT8(types, p);
 
-  log::info(":: handle = 0x{:02x}, types = 0x{:02x}", handle, types);
+  log::info(" :: handle = 0x{:02x}, types = 0x{:02x}", handle, types);
 
   while(types--) {
     uint8_t len = 0x00, type = 0xFF;
@@ -575,11 +576,13 @@ void btm_update_codec_settings(uint8_t* p) {
       STREAM_TO_UINT24(delay, p);
     } else if (len > 0 && type == 0x00) {
       STREAM_TO_UINT8(mode, p);
+    } else if (len > 5 && type == 0x02) {
+      STREAM_TO_UINT48(bdAddr, p);
     }
   }
 
   bluetooth::hci::IsoManager::GetInstance()->HandleVSCodecSettingsEvent(mode,
-    delay);
+    delay, bdAddr);
 }
 
 /*******************************************************************************

@@ -21,6 +21,7 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/volume_title"
                 android:layout_width="153dp"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="5dp"

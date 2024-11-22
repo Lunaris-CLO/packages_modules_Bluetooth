@@ -1302,6 +1302,8 @@ struct ase {
 
   std::vector<uint8_t> metadata;
 
+  bool is_vsmetadata_available;
+
   /* Autonomous change data */
   alarm_t* autonomous_operation_timer_;
   types::AseState autonomous_target_state_;

@@ -45,7 +45,7 @@ void IsoManager::RegisterCigCallbacks(
   pimpl_->RegisterCigCallbacks(callbacks);
 }
 void IsoManager::HandleVSCodecSettingsEvent(uint8_t /* mode */,
-            uint16_t /* delay*/) {}
+            uint16_t /* delay*/, uint64_t /* bd address*/) {}
 
 void IsoManager::RegisterBigCallbacks(
     iso_manager::BigCallbacks* callbacks) const {

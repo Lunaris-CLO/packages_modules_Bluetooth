@@ -24,6 +24,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -55,6 +56,10 @@ public class MainActivity extends AppCompatActivity {
             };
     LeAudioRecycleViewAdapter recyclerViewAdapter;
     private LeAudioViewModel leAudioViewModel;
+    private static final String ACTION_CHANGE_MUTE =
+            "com.android.bluetooth.vc.test.action.CHANGE_MUTE";
+    private static final String EXTRA_MUTE =
+            "com.android.bluetooth.vc.test.action.extra.MUTE";
 
     /** Returns true if any of the required permissions is missing. */
     private boolean isPermissionMissing() {
@@ -346,23 +351,20 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onConnectClick(
                             LeAudioDeviceStateWrapper leAudioDeviceStateWrapper) {
-                        // Not available anymore
-                        Toast.makeText(
-                                        MainActivity.this,
-                                        "Operation not supported on this API version",
-                                        Toast.LENGTH_SHORT)
-                                .show();
+                        Toast.makeText(MainActivity.this,
+                                "Connecting VC to " + leAudioDeviceStateWrapper.device.toString(),
+                                Toast.LENGTH_SHORT).show();
+                        leAudioViewModel.connectVc(leAudioDeviceStateWrapper.device, true);
                     }
 
                     @Override
                     public void onDisconnectClick(
                             LeAudioDeviceStateWrapper leAudioDeviceStateWrapper) {
-                        // Not available anymore
-                        Toast.makeText(
-                                        MainActivity.this,
-                                        "Operation not supported on this API version",
-                                        Toast.LENGTH_SHORT)
-                                .show();
+                        Toast.makeText(MainActivity.this,
+                                "Disconnecting VC from "
+                                        + leAudioDeviceStateWrapper.device.toString(),
+                                Toast.LENGTH_SHORT).show();
+                        leAudioViewModel.connectVc(leAudioDeviceStateWrapper.device, false);
                     }
 
                     @Override
@@ -371,6 +373,12 @@ public class MainActivity extends AppCompatActivity {
                             int volume,
                             boolean is_from_user) {
                         if (is_from_user) {
+                            Toast.makeText(MainActivity.this,
+                                    "Set volume " + volume + " to "
+                                    + leAudioDeviceStateWrapper.device.toString(), Toast.LENGTH_SHORT).show();
+                            Log.d("MainActivity",
+                                    "Set volume " + volume + " to "
+                                    + leAudioDeviceStateWrapper.device.toString());
                             leAudioViewModel.setVolume(leAudioDeviceStateWrapper.device, volume);
                         }
                     }
@@ -379,12 +387,16 @@ public class MainActivity extends AppCompatActivity {
                     public void onCheckedChanged(
                             LeAudioDeviceStateWrapper leAudioDeviceStateWrapper,
                             boolean is_checked) {
-                        // Not available anymore
-                        Toast.makeText(
-                                        MainActivity.this,
-                                        "Operation not supported on this API version",
-                                        Toast.LENGTH_SHORT)
-                                .show();
+                        Toast.makeText(MainActivity.this,
+                                "Change mute for " + leAudioDeviceStateWrapper.device.toString()
+                                + " is_checked: " + is_checked, Toast.LENGTH_SHORT).show();
+                        Log.d("MainActivity",
+                                "Change mute for " + leAudioDeviceStateWrapper.device.toString()
+                                + " is_checked: " + is_checked);
+                        Intent intent = new Intent(ACTION_CHANGE_MUTE);
+                        intent.putExtra(BluetoothDevice.EXTRA_DEVICE, leAudioDeviceStateWrapper.device);
+                        intent.putExtra(EXTRA_MUTE, is_checked);
+                        sendBroadcast(intent);
                     }
 
                     @Override

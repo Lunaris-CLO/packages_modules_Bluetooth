@@ -616,8 +616,12 @@ int A2DP_VendorGetTrackSampleRateAptxAdaptive(const uint8_t* p_codec_info) {
     return -1;
   }
 
-  if (aptx_adaptive_cie.sampleRate == A2DP_APTX_ADAPTIVE_SAMPLERATE_44100) return 44100;
-  if (aptx_adaptive_cie.sampleRate == A2DP_APTX_ADAPTIVE_SAMPLERATE_48000) return 48000;
+  if (aptx_adaptive_cie.sampleRate == A2DP_APTX_ADAPTIVE_SAMPLERATE_44100 ||
+      aptx_adaptive_cie.sampleRate == (A2DP_APTX_ADAPTIVE_SAMPLERATE_44100|A2DP_APTX_ADAPTIVE_SAMPLERATE_RESERVED))
+    return 44100;
+  if (aptx_adaptive_cie.sampleRate == A2DP_APTX_ADAPTIVE_SAMPLERATE_48000 ||
+      aptx_adaptive_cie.sampleRate == (A2DP_APTX_ADAPTIVE_SAMPLERATE_48000|A2DP_APTX_ADAPTIVE_SAMPLERATE_RESERVED))
+    return 48000;
   if (aptx_adaptive_cie.sampleRate == A2DP_APTX_ADAPTIVE_SAMPLERATE_96000) return 96000;
 
   return -1;

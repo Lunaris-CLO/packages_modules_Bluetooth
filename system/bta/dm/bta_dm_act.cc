@@ -63,6 +63,7 @@
 #include "stack/include/main_thread.h"
 #include "types/bluetooth/uuid.h"
 #include "types/raw_address.h"
+#include "osi/include/osi.h"
 
 using bluetooth::Uuid;
 using namespace bluetooth;
@@ -115,6 +116,8 @@ static const char kPropertySniffOffloadEnabled[] =
 #ifndef BTA_DM_SWITCH_DELAY_TIMER_MS
 #define BTA_DM_SWITCH_DELAY_TIMER_MS 500
 #endif
+
+#define BTA_DM_DISABLE_TIMER 1000
 
 /* Sysprop path for page timeout */
 #ifndef PROPERTY_PAGE_TIMEOUT
@@ -1780,6 +1783,47 @@ void bta_dm_ble_subrate_request(const RawAddress& bd_addr, uint16_t subrate_min,
                              cont_num, timeout)) {
       log::warn("Unable to set L2CAP ble subrating peer:{}", bd_addr);
     }
+}
+
+void bta_dm_disable_timer_cback(void* data) {
+  uint8_t i;
+  tBT_TRANSPORT transport = BT_TRANSPORT_BR_EDR;
+  log::warn("Get num acl links: {}", BTM_GetNumAclLinks());
+  log::warn("Device count: {}", bta_dm_cb.device_list.count);
+  if (BTM_GetNumAclLinks()) {
+      for (i = 0; i < bta_dm_cb.device_list.count; i++) {
+        transport = bta_dm_cb.device_list.peer_device[i].transport;
+        if (BT_TRANSPORT_BR_EDR == transport) {
+          btm_remove_acl(bta_dm_cb.device_list.peer_device[i].peer_bdaddr,
+                  transport);
+        }
+      }
+  }
+}
+
+void bta_dm_bredr_cleanup() {
+  log::warn("BTA dm bredr cleanup called!");
+  alarm_set_on_mloop(bta_dm_cb.disable_timer, BTA_DM_DISABLE_TIMER,
+                    bta_dm_disable_timer_cback, UINT_TO_PTR(2));
+}
+
+void bta_dm_bredr_startup() {
+  log::warn("BTA dm bredr startup called!");
+  uint8_t i;
+  tBT_TRANSPORT transport = BT_TRANSPORT_BR_EDR;
+  if (alarm_is_scheduled(bta_dm_cb.disable_timer)) {
+    alarm_cancel(bta_dm_cb.disable_timer);
+    if (BTM_GetNumAclLinks()) {
+      for (i = 0; i < bta_dm_cb.device_list.count; i++) {
+        log::warn("Device {} transport : {}", i, bta_dm_cb.device_list.peer_device[i].transport);
+        transport = bta_dm_cb.device_list.peer_device[i].transport;
+        if (BT_TRANSPORT_BR_EDR == transport) {
+          btm_remove_acl(bta_dm_cb.device_list.peer_device[i].peer_bdaddr,
+                         transport);
+        }
+      }
+    }
+  }
 }
 
 namespace bluetooth {

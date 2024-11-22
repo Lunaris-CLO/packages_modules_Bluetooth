@@ -1260,7 +1260,7 @@ class LeAudioBroadcasterImpl : public LeAudioBroadcaster, public BigCallbacks {
         return;
       }
 
-      instance->le_audio_source_hal_client_->ConfirmStreamingRequest();
+      instance->le_audio_source_hal_client_->ConfirmStreamingRequest(false);
     }
 
     virtual void OnAudioMetadataUpdate(
@@ -1329,7 +1329,7 @@ void LeAudioBroadcaster::Initialize(
   }
 
   if (!std::move(audio_hal_verifier).Run()) {
-    log::fatal("HAL requirements not met. Init aborted.");
+    log::warn("HAL requirements not met.");
   }
 
   IsoManager::GetInstance()->Start();
