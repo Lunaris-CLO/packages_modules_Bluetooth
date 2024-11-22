@@ -17,6 +17,16 @@
  *
  ******************************************************************************/
 
+/******************************************************************************
+ * Changes from Qualcomm Innovation Center are provided under the following
+ * license:
+ *
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ *
+ ******************************************************************************/
+
 #ifndef BT_TARGET_H
 #define BT_TARGET_H
 
@@ -93,6 +103,15 @@
 #endif
 
 //------------------End added from bdroid_buildcfg.h---------------------
+
+/******************************************************************************
+**
+** Test Application interface
+**
+******************************************************************************/
+#ifndef TEST_APP_INTERFACE
+#define TEST_APP_INTERFACE TRUE
+#endif
 
 /******************************************************************************
  *

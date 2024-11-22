@@ -126,6 +126,10 @@ cc_library_static {
         "src/btif_profile_storage.cc",
         "src/btif_rc.cc",
         "src/btif_vc.cc",
+        "src/btif_gap.cc",
+        "src/btif_gatt_qual.cc",
+        "src/btif_l2cap.cc",
+        "src/btif_smp.cc",
     ],
     generated_headers: [
         "BluetoothGeneratedDumpsysDataSchema_h",
@@ -538,6 +542,12 @@ cc_test {
     ],
 }
 
+cc_defaults {
+    name: "net_btif_mock_cert_test_defaults",
+    cflags: [
+        "-DMOCK_CERT_TEST",
+    ],
+}
 cc_test {
     name: "net_test_btif_hh",
     host_supported: true,
@@ -547,6 +557,7 @@ cc_test {
         "latest_android_hardware_bluetooth_audio_ndk_static",
         "latest_android_media_audio_common_types_ndk_static",
         "mts_defaults",
+        "net_btif_mock_cert_test_defaults",
     ],
     test_suites: ["general-tests"],
     include_dirs: btifCommonIncludes +

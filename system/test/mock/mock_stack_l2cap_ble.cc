@@ -21,6 +21,7 @@
  *  mockcify.pl ver 0.2
  */
 // Mock include file to share data between tests and mock
+#ifndef MOCK_CERT_TEST
 #include "test/mock/mock_stack_l2cap_ble.h"
 
 // Original included files, if any
@@ -206,3 +207,5 @@ void l2cble_process_subrate_change_evt(uint16_t handle, uint8_t status,
 }
 
 // END mockcify generation
+
+#endif

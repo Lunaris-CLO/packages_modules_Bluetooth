@@ -1112,7 +1112,8 @@ public class BassClientStateMachine extends StateMachine {
                     checkAndUpdateBroadcastCode(recvState);
                     processPASyncState(recvState);
 
-                    if (isPendingRemove(recvState.getSourceId())) {
+                    if (isPendingRemove(recvState.getSourceId()) &&
+                            !isSyncedToTheSource(recvState.getSourceId())) {
                         Message message = obtainMessage(REMOVE_BCAST_SOURCE);
                         message.arg1 = recvState.getSourceId();
                         sendMessage(message);

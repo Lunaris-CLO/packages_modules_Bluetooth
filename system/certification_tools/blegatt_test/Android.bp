@@ -1,0 +1,34 @@
+cc_binary {
+    name: "gatt_tool_qti_internal",
+    system_ext_specific: true,
+
+    srcs: ["gatt_test.cpp"],
+
+    include_dirs: [
+        ".",
+        "packages/modules/Bluetooth/system/stack/include",
+        "packages/modules/Bluetooth/system/include",
+        "packages/modules/Bluetooth/system/types",
+        "packages/modules/Bluetooth/system/internal_include",
+        "packages/modules/Bluetooth/system/stack/l2cap",
+        "packages/modules/Bluetooth/system",
+        "packages/modules/Bluetooth/system/btif/include",
+        "packages/modules/Bluetooth/system/bta/include",
+        "packages/modules/Bluetooth/system/log/include",
+        "packages/modules/Bluetooth/system/gd",
+        "external/libchrome",
+    ],
+
+    cflags: ["-DHAS_NO_BDROID_BUILDCFG"],
+
+    shared_libs: [
+        "libcutils",
+        "libchrome",
+        "libutils",
+        "libbinder",
+        "libbinder_ndk",
+    ],
+
+    static_libs: ["libbluetooth-types"],
+
+}

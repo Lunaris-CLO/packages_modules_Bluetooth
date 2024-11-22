@@ -957,10 +957,22 @@ void bta_ag_at_hfp_cback(tBTA_AG_SCB* p_scb, uint16_t cmd, uint8_t arg_type,
     case BTA_AG_AT_A_EVT:
     case BTA_AG_SPK_EVT:
     case BTA_AG_MIC_EVT:
-    case BTA_AG_AT_CHUP_EVT:
     case BTA_AG_AT_CBC_EVT:
       /* send OK */
       bta_ag_send_ok(p_scb);
+      break;
+    case BTA_AG_AT_CHUP_EVT:
+     if (!bta_ag_sco_is_active_device(p_scb->peer_addr) &&
+           interop_match_addr_or_name(INTEROP_DISALLOW_REJECT_CALL,
+             &p_scb->peer_addr, &btif_storage_get_remote_device_property)) {
+        log::verbose("%s: AT+CHUP rejected as %s is not the active "\
+                            "device", __func__, p_scb->peer_addr.ToString().c_str());
+        log::verbose("Avoid sending AT+CHUP update to application.");
+        bta_ag_send_ok(p_scb);
+        event = BTA_AG_ENABLE_EVT;
+      } else {
+        bta_ag_send_ok(p_scb);
+      }
       break;
     case BTA_AG_AT_BLDN_EVT:
       /* Do not send OK, App will send error or OK depending on
@@ -2117,6 +2129,8 @@ void bta_ag_send_ring(tBTA_AG_SCB* p_scb, const tBTA_AG_DATA& /* data */) {
               p_scb->conn_service, p_scb->callsetup_ind);
     return;
   }
+  log::info("exiting sniff for sending RING");
+  bta_sys_busy(BTA_ID_AG, p_scb->app_id, p_scb->peer_addr);
   /* send RING */
   bta_ag_send_result(p_scb, BTA_AG_LOCAL_RES_RING, nullptr, 0);
 
@@ -2128,6 +2142,8 @@ void bta_ag_send_ring(tBTA_AG_SCB* p_scb, const tBTA_AG_DATA& /* data */) {
 
   bta_sys_start_timer(p_scb->ring_timer, BTA_AG_RING_TIMEOUT_MS,
                       BTA_AG_RING_TIMEOUT_EVT, bta_ag_scb_to_idx(p_scb));
+  log::info("resetting idle timer after sending RING");
+  bta_sys_idle(BTA_ID_AG, p_scb->app_id, p_scb->peer_addr);
 }
 
 /*******************************************************************************

@@ -361,6 +361,8 @@ typedef enum {
 
   INTEROP_INBAND_RINGTONE_SET_TO_FALSE,
 
+  INTEROP_DISALLOW_REJECT_CALL,
+
   END_OF_INTEROP_LIST
 } interop_feature_t;
 

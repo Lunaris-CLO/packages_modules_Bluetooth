@@ -786,6 +786,13 @@ void Device::PlaybackStatusNotificationResponse(uint8_t label, bool interim,
   }
 
   auto state_to_send = status.state;
+  log::verbose("fast_forwarding_: {}, fast_rewinding_: {}", fast_forwarding_, fast_rewinding_);
+  if(fast_forwarding_ || fast_rewinding_) {
+    state_to_send = (fast_forwarding_) ? PlayState::FWD_SEEK : PlayState::REV_SEEK;
+    status.state = (fast_forwarding_) ? PlayState::FWD_SEEK : PlayState::REV_SEEK;
+  }
+
+  log::verbose("state_to_send: {}", state_to_send);
   if (!IsActive()) state_to_send = PlayState::PAUSED;
   if (!interim && state_to_send == last_play_status_.state) {
     log::verbose("Not sending notification due to no state update {}",
@@ -901,6 +908,11 @@ void Device::RejectNotification() {
 void Device::GetPlayStatusResponse(uint8_t label, PlayStatus status) {
   log::verbose("position={} duration={} state={}", status.position,
                status.duration, status.state);
+  if(fast_forwarding_) {
+    status.state = PlayState::FWD_SEEK;
+  } else if(fast_rewinding_) {
+    status.state = PlayState::REV_SEEK;
+  }
   auto response = GetPlayStatusResponseBuilder::MakeBuilder(
       status.duration, status.position,
       IsActive() ? status.state : PlayState::PAUSED);
@@ -997,8 +1009,10 @@ void Device::MessageReceived(uint8_t label, std::shared_ptr<Packet> pkt) {
       send_message(label, false, std::move(response));
 
       // TODO (apanicke): Use an enum for media key ID's
-      if (pass_through_packet->GetOperationId() == 0x44 &&
+      if (pass_through_packet->GetOperationId() == uint8_t(OperationID::PLAY) &&
           pass_through_packet->GetKeyState() == KeyState::PUSHED) {
+        fast_forwarding_ = false;
+        fast_rewinding_ = false;
         // We need to get the play status since we need to know
         // what the actual playstate is without being modified
         // by whether the device is active.
@@ -1022,11 +1036,33 @@ void Device::MessageReceived(uint8_t label, std::shared_ptr<Packet> pkt) {
                 }
               }
 
-              d->media_interface_->SendKeyEvent(0x44, KeyState::PUSHED);
+              d->media_interface_->SendKeyEvent(uint8_t(OperationID::PLAY), KeyState::PUSHED);
             },
             weak_ptr_factory_.GetWeakPtr()));
         return;
       }
+
+      log::verbose(" Operation ID = {}", pass_through_packet->GetOperationId());
+      if(pass_through_packet->GetOperationId() == uint8_t(OperationID::FAST_FORWARD)) {
+        if(pass_through_packet->GetKeyState() == KeyState::PUSHED) {
+          fast_forwarding_ = true;
+        } else if(pass_through_packet->GetKeyState() == KeyState::RELEASED) {
+          fast_forwarding_ = false;
+        }
+      } else if(pass_through_packet->GetOperationId() == uint8_t(OperationID::REWIND)) {
+        if(pass_through_packet->GetKeyState() == KeyState::PUSHED) {
+          fast_rewinding_ = true;
+        } else if(pass_through_packet->GetKeyState() == KeyState::RELEASED) {
+          fast_rewinding_ = false;
+        }
+      } else {
+        fast_forwarding_ = false;
+        fast_rewinding_ = false;
+      }
+      log::verbose("fast_forwarding_: {}, fast_rewinding_: {}", fast_forwarding_, fast_rewinding_);
+      media_interface_->GetPlayStatus(base::Bind(
+          &Device::PlaybackStatusNotificationResponse,
+          weak_ptr_factory_.GetWeakPtr(), play_status_changed_.second, false));
 
       if (IsActive()) {
         media_interface_->SendKeyEvent(pass_through_packet->GetOperationId(),
@@ -1786,15 +1822,14 @@ void Device::HandlePlayStatusUpdate() {
   media_interface_->GetPlayStatus(base::Bind(
       [](base::WeakPtr<Device> d, PlayStatus s) {
         if (d && s.state == PlayState::PLAYING && s.state != d->last_play_status_.state) {
-          bool is_le_audio_in_idle = LeAudioClient::IsLeAudioClientRunning() ?
-              LeAudioClient::IsLeAudioClientInIdle() : false;
-          int remote_suspend = 0x2;
-          log::info("is_leaudio_in_idle: {}", is_le_audio_in_idle);
-          log::info("Clear Remote Supend if already set");
-          if (btif_av_check_flag(A2dpType::kSource, remote_suspend)) {
+          int remote_suspended = 0x2;
+          if (btif_av_check_flag(A2dpType::kSource, remote_suspended)) {
+            bool is_le_audio_in_idle = LeAudioClient::IsLeAudioClientRunning() ?
+                LeAudioClient::IsLeAudioClientInIdle() : true;
+            log::info("is_leaudio_in_idle: {}", is_le_audio_in_idle);
             btif_av_clear_remote_suspend_flag(A2dpType::kSource);
-            if (bluetooth::headset::IsCallIdle() && is_le_audio_in_idle &&
-                (btif_av_stream_ready(A2dpType::kSource))) {
+            log::info("Clear Remote Supend that's already set");
+            if (bluetooth::headset::IsCallIdle() && is_le_audio_in_idle) {
               btif_av_stream_start(A2dpType::kSource);
             }
           }
@@ -1969,6 +2004,8 @@ void Device::DeviceDisconnected() {
   // to reset the local volume var to be sure we send the correct value
   // to the remote device on the next connection.
   volume_ = VOL_NOT_SUPPORTED;
+  fast_forwarding_ = false;
+  fast_rewinding_ = false;
 }
 
 static std::string volumeToStr(int8_t volume) {

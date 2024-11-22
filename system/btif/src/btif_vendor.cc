@@ -69,6 +69,7 @@
  *
  ***********************************************************************************/
 
+#if TEST_APP_INTERFACE == TRUE
 #include <hardware/bt_vendor.h>
 #include <stdlib.h>
 #include <string.h>
@@ -90,11 +91,19 @@
 #include "osi/include/allocator.h"
 #include "osi/include/osi.h"
 #include "stack/include/btm_client_interface.h"
-
+#if TEST_APP_INTERFACE == TRUE
+#include <bt_testapp.h>
+#endif
 using namespace bluetooth;
 
 extern bool interface_ready(void);
+#define SOC_NAME_MAX_SIZE 15
 
+extern const btl2cap_interface_t* btif_l2cap_get_interface(void);
+extern const btgatt_test_interface_t* btif_gatt_test_get_interface(void);
+extern const btsmp_interface_t* btif_smp_get_interface(void);
+extern const btgap_interface_t* btif_gap_get_interface(void);
+#endif
 
 btvendor_callbacks_t* bt_vendor_callbacks = NULL;
 
@@ -154,13 +163,10 @@ void btif_vendor_update_add_on_features() {
 }
 static void set_wifi_state(bool status) {
   log::info("setWifiState :{}", status);
-  // todo
-  // BTA_DmSetWifiState(status);
 }
 
 static void set_Power_back_off_state(bool status) {
   log::info("setPowerBackOffState :{}", status);
-  // do_in_main_thread(base::BindOnce(get_btm_client_interface().vendor.BTM_GetHostAddOnFeatures)
   get_btm_client_interface().vendor.BTM_SetPowerBackOffState(status);
 }
 
@@ -169,9 +175,45 @@ static void cleanup(void) {
   if (bt_vendor_callbacks) bt_vendor_callbacks = NULL;
 }
 
+/*******************************************************************************
+**
+** Function         get_testapp_interface
+**
+** Description      Get the Test interface
+**
+** Returns          btvendor_interface_t
+**
+*******************************************************************************/
+#if TEST_APP_INTERFACE == TRUE
+static const void* get_testapp_interface(int test_app_profile) {
+  log::info("{} : ", test_app_profile);
+  switch (test_app_profile) {
+    case TEST_APP_L2CAP:
+      return btif_l2cap_get_interface();
+    case TEST_APP_GATT:
+      return btif_gatt_test_get_interface();
+    case TEST_APP_SMP:
+      return btif_smp_get_interface();
+    case TEST_APP_GAP:
+      return btif_gap_get_interface();
+    default:
+      return NULL;
+  }
+  return NULL;
+}
+#endif
+
 static const btvendor_interface_t btvendorInterface = {
-    sizeof(btvendorInterface), init,    set_wifi_state,
-    set_Power_back_off_state,  cleanup,
+    sizeof(btvendorInterface),
+    init,
+#if TEST_APP_INTERFACE == TRUE
+    get_testapp_interface,
+#else
+    NULL,
+#endif
+    set_wifi_state,
+    set_Power_back_off_state,
+    cleanup,
 };
 
 /*******************************************************************************

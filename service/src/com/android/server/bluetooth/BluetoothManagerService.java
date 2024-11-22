@@ -1424,34 +1424,6 @@ class BluetoothManagerService {
             }
 
             if (persist) {
-                sendDisableMsg(ENABLE_DISABLE_REASON_APPLICATION_REQUEST,
-                            packageName);
-
-            } else {
-                /* It means disable is called by shutdown thread */
-                synchronized (this) {
-                clearBleApps();
-                }
-
-                try {
-                    mAdapterLock.readLock().lock();
-                    mEnableExternal = false;
-                    if (mAdapter != null) {
-                        if (getState() == STATE_BLE_ON) {
-                           mEnable = false;
-                           mAdapter.stopBle(mContext.getAttributionSource());
-                        } else {
-                            sendDisableMsg(ENABLE_DISABLE_REASON_SYSTEM_BOOT,
-                                   packageName);
-                        }
-                    }
-                } catch (RemoteException e) {
-                    Log.e(TAG, "Unable to initiate disable", e);
-                } finally {
-                    mAdapterLock.readLock().unlock();
-                }
-            }
-            if (persist) {
                 setBluetoothPersistedState(BLUETOOTH_OFF);
             }
             mEnableExternal = false;

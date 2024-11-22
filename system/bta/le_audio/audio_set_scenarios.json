@@ -131,6 +131,7 @@
             "name": "Game",
             "configurations": [
                 "VND_Two-OneChan-SnkAse-Lc3_48_1_75octs_R3_L8-One-OneChan-SrcAse-Lc3_32_1_45octs_R3_L15_V2_1",
+                "VND_Two-OneChan-SnkAse-Lc3_48_1_75octs_R3_L8-One-OneChan-SrcAse-Lc3_16_1_30octs_R3_L15_V2_1",
                 "VND_Two-OneChan-SnkAse-Lc3_48_1_75octs_R5_L15-One-OneChan-SrcAse-Lc3_16_1_30octs_R3_L15_V1_1",
                 "Two-OneChan-SnkAse-Lc3_48_1-One-OneChan-SrcAse-Lc3_16_1_1",
                 "VND_Two-OneChan-SnkAse-Lc3_48_2_155octs_R5_L20-Two-OneChan_SrcAse-Lc3_16_2_40octs_R5_L10_1",

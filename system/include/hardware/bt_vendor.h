@@ -108,6 +108,9 @@ typedef struct {
    */
   bt_status_t (*init)(btvendor_callbacks_t* callbacks);
 
+  /** test interface. */
+  const void* (*get_testapp_interface)(int);
+
   /** set wifi state */
   void (*set_wifi_state)(bool);
 

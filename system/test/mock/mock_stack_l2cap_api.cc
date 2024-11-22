@@ -20,6 +20,8 @@
  *
  *  mockcify.pl ver 0.2
  */
+
+#ifndef MOCK_CERT_TEST
 #include "test/mock/mock_stack_l2cap_api.h"
 
 // Original included files, if any
@@ -73,6 +75,7 @@ struct L2CA_SetMediaStreamChannel L2CA_SetMediaStreamChannel;
 struct L2CA_isMediaChannel L2CA_isMediaChannel;
 struct L2CA_LeCreditDefault L2CA_LeCreditDefault;
 struct L2CA_LeCreditThreshold L2CA_LeCreditThreshold;
+struct L2CA_Ping L2CA_Ping;
 
 }  // namespace stack_l2cap_api
 }  // namespace mock
@@ -268,6 +271,12 @@ bool L2CA_isMediaChannel(uint16_t handle, uint16_t channel_id,
   return test::mock::stack_l2cap_api::L2CA_isMediaChannel(handle, channel_id,
                                                           is_local_cid);
 }
+
+bool L2CA_Ping(const RawAddress& bd_addr, tL2CA_ECHO_RSP_CB* p_callback) {
+  inc_func_call_count(__func__);
+  return test::mock::stack_l2cap_api::L2CA_Ping(bd_addr, p_callback);
+}
+
 uint16_t L2CA_LeCreditDefault() {
   inc_func_call_count(__func__);
   return test::mock::stack_l2cap_api::L2CA_LeCreditDefault();
@@ -280,3 +289,6 @@ uint16_t L2CA_LeCreditThreshold() {
 // END mockcify generation
 
 void L2CA_Dumpsys(int /* fd */) { inc_func_call_count(__func__); }
+
+
+#endif

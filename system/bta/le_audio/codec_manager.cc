@@ -155,8 +155,7 @@ struct codec_manager_impl {
     is_aptx_adaptive_lex_supported_ = /*(IsAptxLeXSuppoerted(check sysprop, QLL feat)*/ true;
 
     is_enhanced_le_gaming_supported_ = BTM_QBCE_QLE_HCI_SUPPORTED(soc_add_on_features->as_array) &&
-                                   is_dynamic_ft_change_supported && is_qhs_enabled_locally &&
-                                   is_apx_lossless_le_supported; // collineray with aptx-le-lossless
+                                   is_dynamic_ft_change_supported && is_qhs_enabled_locally;
 
     log::debug("FT Changes allowed {}, BN Variation allowed {}, Aptx LE Lossless enabled {}",
         is_dynamic_ft_change_supported, is_dynamic_bn_over_qhs, is_apx_lossless_le_supported);

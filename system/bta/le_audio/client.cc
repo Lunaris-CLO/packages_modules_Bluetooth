@@ -580,6 +580,41 @@ class LeAudioClientImpl : public LeAudioClient {
     }
   }
 
+  void UpdatePriorCodecTypeToHal(LeAudioDeviceGroup* group) {
+    if (configuration_context_type_ == LeAudioContextType::CONVERSATIONAL ||
+        configuration_context_type_ == LeAudioContextType::LIVE) {
+      auto id = group->GetConfiguration(
+       configuration_context_type_)->confs.source.at(0).codec.id;
+      auto bits = group->GetConfiguration(
+       configuration_context_type_)->confs.source.at(0).codec.GetBitsPerSample();
+      auto intvl = group->GetConfiguration(
+       configuration_context_type_)->confs.source.at(0).codec.GetDataIntervalUs();
+      auto freq = group->GetConfiguration(
+       configuration_context_type_)->confs.source.at(0).codec.GetSamplingFrequencyHz();
+      auto sdu = group->GetConfiguration(
+       configuration_context_type_)->confs.source.at(0).codec.GetOctectsPerFrame();
+      auto delay = group->GetRemoteDelay(
+       bluetooth::le_audio::types::kLeAudioDirectionSource);
+      bluetooth::le_audio::offload_config config = {
+          .stream_map = std::vector<bluetooth::le_audio::stream_map_info>{
+                bluetooth::le_audio::stream_map_info(0x00, 0x00, false)},
+          .codec_id = id,
+          .bits_per_sample = bits,
+          .sampling_rate = freq,
+          .frame_duration = intvl,
+          .octets_per_frame = sdu,
+          .blocks_per_sdu = 1,
+          .peer_delay_ms = delay,
+          .mode = 0,
+          .delay = delay,
+          .codec_metadata = std::vector<uint8_t>(),
+      };
+      if (le_audio_sink_hal_client_) {
+        le_audio_sink_hal_client_->UpdateAudioConfigToHal(config);
+      }
+    }
+  }
+
   void SuspendedForReconfiguration() {
     if (audio_sender_state_ > AudioState::IDLE) {
       LeAudioLogHistory::Get()->AddLogHistory(
@@ -6231,6 +6266,7 @@ class LeAudioClientImpl : public LeAudioClient {
           //handleAsymmetricPhyForUnicast(group);
           UpdateLocationsAndContextsAvailability(group);
           if (group->IsPendingConfiguration()) {
+            UpdatePriorCodecTypeToHal(group);
             SuspendedForReconfiguration();
             group->SetSuspendedForReconfiguration();
             auto remote_direction =

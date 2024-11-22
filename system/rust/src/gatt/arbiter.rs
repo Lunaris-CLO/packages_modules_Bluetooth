@@ -148,6 +148,11 @@ fn intercept_packet(tcb_idx: u8, packet: Vec<u8>) -> InterceptAction {
 }
 
 fn on_mtu_event(tcb_idx: TransportIndex, event: MtuEvent) {
+    if !has_arbiter() {
+        warn!("arbiter is not yet initialized");
+        return;
+    }
+
     if with_arbiter(|arbiter| arbiter.is_connection_isolated(tcb_idx)) {
         do_in_rust_thread(move |modules| {
             let Some(bearer) = modules.gatt_module.get_bearer(tcb_idx) else {

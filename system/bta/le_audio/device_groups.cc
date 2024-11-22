@@ -134,6 +134,8 @@ void LeAudioDeviceGroup::ClearSinksFromConfiguration(void) {
   auto direction = types::kLeAudioDirectionSink;
   stream_conf.stream_params.get(direction).clear();
   CodecManager::GetInstance()->ClearCisConfiguration(direction);
+
+  transport_latency_mtos_us_ = 0;
 }
 
 void LeAudioDeviceGroup::ClearSourcesFromConfiguration(void) {
@@ -142,6 +144,8 @@ void LeAudioDeviceGroup::ClearSourcesFromConfiguration(void) {
   auto direction = types::kLeAudioDirectionSource;
   stream_conf.stream_params.get(direction).clear();
   CodecManager::GetInstance()->ClearCisConfiguration(direction);
+
+  transport_latency_stom_us_ = 0;
 }
 
 void LeAudioDeviceGroup::ClearAllCises(void) {

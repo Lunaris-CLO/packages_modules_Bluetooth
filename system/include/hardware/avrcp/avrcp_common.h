@@ -147,6 +147,16 @@ enum class KeyState : uint8_t {
   RELEASED = 0x01,
 };
 
+enum class OperationID : uint8_t {
+  PLAY = 0x44,
+  STOP = 0x45,
+  PAUSE = 0x46,
+  REWIND = 0x48,
+  FAST_FORWARD = 0x49,
+  FORWARD = 0x4B,
+  BACKWARD = 0x4C,
+};
+
 enum class PlayerAttribute : uint8_t {
   EQUALIZER = 0x01,
   REPEAT = 0x02,

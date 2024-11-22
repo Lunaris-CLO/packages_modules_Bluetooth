@@ -17,7 +17,7 @@
 /*
  * Generated mock file from original source file
  */
-
+#ifndef MOCK_CERT_TEST
 #include <cstdint>
 
 #include "stack/include/bt_hdr.h"
@@ -85,3 +85,6 @@ void l2cble_update_sec_act(const RawAddress& /* bd_addr */,
                            uint16_t /* sec_act */) {
   inc_func_call_count(__func__);
 }
+
+
+#endif

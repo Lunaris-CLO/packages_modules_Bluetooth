@@ -1506,6 +1506,18 @@
             ]
         },
         {
+            "name": "VND_Two-OneChan-SnkAse-Lc3_48_1_75octs_R3_L8-One-OneChan-SrcAse-Lc3_16_1_30octs_R3_L15_V2_1",
+            "codec_config_name": "VND_Two-OneChan-SnkAse-Lc3_48_1-One-OneChan-SrcAse-Lc3_16_1",
+            "qos_config_name": [
+                "VND_QoS_Config_R3_L8",
+                "VND_QoS_Config_R3_L15"
+            ],
+            "codec_metadata_name": [
+                "VND_LC3Q_V2_VS_Metadata",
+                "VND_LC3Q_V1_VS_Metadata"
+            ]
+        },
+        {
             "name": "VND_Two-OneChan-SnkAse-Lc3_48_1_75octs_R5_L15-One-OneChan-SrcAse-Lc3_16_1_30octs_R3_L15_V1_1",
             "codec_config_name": "VND_Two-OneChan-SnkAse-Lc3_48_1-One-OneChan-SrcAse-Lc3_16_1",
             "qos_config_name": [

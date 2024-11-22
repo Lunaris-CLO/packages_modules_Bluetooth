@@ -35,7 +35,6 @@
 
 bool btif_av_src_sink_coexist_enabled(void) { return true; }
 void btif_av_clear_remote_suspend_flag(A2dpType type) {return;}
-bool btif_av_stream_ready(const A2dpType local_a2dp_type) { return false; }
 bool btif_av_check_flag(const A2dpType local_a2dp_type, uint8_t flag) { return false; }
 void btif_av_stream_start(A2dpType type) {return;}
 bool bluetooth::headset::IsCallIdle(void) { return true; }

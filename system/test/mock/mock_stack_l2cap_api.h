@@ -499,6 +499,18 @@ struct L2CA_isMediaChannel {
     return body(handle, channel_id, is_local_cid);
   };
 };
+
+struct L2CA_Ping {
+  std::function<bool(const RawAddress& p_bd_addr, tL2CA_ECHO_RSP_CB* p_callback)> body{
+      [](const RawAddress& /* p_bd_addr */, tL2CA_ECHO_RSP_CB* /* p_callback */) {
+        return false;
+      }};
+  bool operator()(const RawAddress& p_bd_addr, tL2CA_ECHO_RSP_CB* p_callback) {
+    return body(p_bd_addr, p_callback);
+  };
+};
+
+
 extern struct L2CA_isMediaChannel L2CA_isMediaChannel;
 // Name: L2CA_LeCreditDefault
 // Params:
