@@ -82,6 +82,12 @@ void RoundRobinScheduler::Unregister(uint16_t handle) {
   }
   acl_queue_handlers_.erase(handle);
   starting_point_ = acl_queue_handlers_.begin();
+
+  if (!enqueue_registered_.load() &&
+      !acl_queue_handlers_.empty()) {
+    log::warn("Round Robin Scheduler stopped, restart it for other acl handlers");
+    handler_->Post(common::BindOnce(&RoundRobinScheduler::start_round_robin, common::Unretained(this)));
+  }
 }
 
 void RoundRobinScheduler::SetLinkPriority(uint16_t handle, bool high_priority) {
@@ -172,6 +178,7 @@ void RoundRobinScheduler::buffer_packet(uint16_t acl_handle) {
         std::make_tuple(
             connection_type, handle, AclBuilder::Create(handle, packet_boundary_flag, broadcast_flag, std::move(packet))),
         acl_priority);
+    acl_queue_handler->second.number_of_sent_packets_ += 1;
   } else {
     auto fragments = AclFragmenter(mtu, std::move(packet)).GetFragments();
     for (size_t i = 0; i < fragments.size(); i++) {
@@ -182,11 +189,11 @@ void RoundRobinScheduler::buffer_packet(uint16_t acl_handle) {
           acl_priority);
       packet_boundary_flag = PacketBoundaryFlag::CONTINUING_FRAGMENT;
     }
+    acl_queue_handler->second.number_of_sent_packets_ += fragments.size();
   }
   log::assert_that(fragments_to_send_.size() > 0, "assert failed: fragments_to_send_.size() > 0");
   unregister_all_connections();
 
-  acl_queue_handler->second.number_of_sent_packets_ += fragments_to_send_.size();
   send_next_fragment();
 }
 
@@ -209,6 +216,15 @@ void RoundRobinScheduler::send_next_fragment() {
 
 // Invoked from some external Queue Reactable context 1
 std::unique_ptr<AclBuilder> RoundRobinScheduler::handle_enqueue_next_fragment() {
+  if (fragments_to_send_.empty()) {
+    if (enqueue_registered_.exchange(false)) {
+      hci_queue_end_->UnregisterEnqueue();
+    }
+    handler_->Post(common::BindOnce(&RoundRobinScheduler::start_round_robin, common::Unretained(this)));
+    log::warn("fragments_to_send_ is empty, start new round robin");
+    return std::unique_ptr<AclBuilder>(nullptr);
+  }
+
   ConnectionType connection_type = std::get<0>(fragments_to_send_.front());
   if (connection_type == ConnectionType::CLASSIC) {
     log::assert_that(acl_packet_credits_ > 0, "assert failed: acl_packet_credits_ > 0");

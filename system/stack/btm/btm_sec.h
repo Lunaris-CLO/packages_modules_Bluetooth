@@ -275,6 +275,8 @@ tBTM_STATUS BTM_SetEncryption(const RawAddress& bd_addr,
 
 bool BTM_SecIsSecurityPending(const RawAddress& bd_addr);
 
+bool BTM_SecIsLeSecurityPending(const RawAddress& bd_addr);
+
 /*******************************************************************************
  *
  * Function         BTM_ConfirmReqReply

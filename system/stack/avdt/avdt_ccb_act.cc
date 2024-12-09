@@ -180,7 +180,7 @@ void avdt_ccb_hdl_discover_cmd(AvdtpCcb* p_ccb, tAVDT_CCB_EVT* p_data) {
     const char *codec_name;
     codec_name = A2DP_CodecName(p_scb->stream_config.cfg.codec_info);
 
-    log::verbose("codec name %s", codec_name);
+    log::verbose("codec name {}", codec_name);
     if (p_scb->stream_config.cfg.codec_info[AVDT_CODEC_TYPE_INDEX] == A2DP_MEDIA_CT_AAC) {
         bool vbr_bl = false;
         bool vbr_supp = osi_property_get_bool("persist.vendor.qcom.bluetooth.aac_vbr_ctl.enabled",
@@ -294,7 +294,7 @@ void avdt_ccb_hdl_getcap_cmd(AvdtpCcb* p_ccb, tAVDT_CCB_EVT* p_data) {
     }
     int vbr_remote = 0;
     vbr_remote = p_scb->stream_config.cfg.codec_info[6] & A2DP_AAC_VARIABLE_BIT_RATE_MASK;
-    log::verbose("%s, original vbr {}", vbr_remote);
+    log::verbose("original vbr {}", vbr_remote);
     if (vbr_bl) {
       if (vbr_remote == A2DP_AAC_VARIABLE_BIT_RATE_ENABLED) {
           log::verbose("reset vbr to disabled ");

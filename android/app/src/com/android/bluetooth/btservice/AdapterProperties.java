@@ -783,6 +783,10 @@ class AdapterProperties {
         if (!isNormalStateTransition(prevState, newState)) {
             Log.w(TAG, "updateOnProfileConnectionChanged: Unexpected transition. " + logInfo);
         }
+        if (mService == null) {
+            Log.e(TAG, "AdapterService is null");
+            return;
+        }
         BluetoothStatsLog.write(
                 BluetoothStatsLog.BLUETOOTH_CONNECTION_STATE_CHANGED,
                 newState,

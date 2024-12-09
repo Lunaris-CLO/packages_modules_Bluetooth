@@ -21,6 +21,7 @@ import android.util.Log;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Random;
 
 /** A class abstracting the storage method of cover art images */
 final class AvrcpCoverArtStorage {
@@ -140,19 +141,19 @@ final class AvrcpCoverArtStorage {
      */
     private String getNextImageHandle() {
         synchronized (mHandlesLock) {
-            if (mNextImageHandle > 9999999) {
-                error("No more image handles left");
-                return null;
-            }
 
-            String handle = String.valueOf(mNextImageHandle);
-            while (handle.length() != 7) {
-                handle = "0" + handle;
+            /*  Random may retrun duplicate values,
+             *  so genearte new value if handle is present with same value
+             */
+            String imageHandle = "";
+            for (int i = 0; i < mMaxImages; i++) {
+                imageHandle = String.format("%07d", new Random().nextInt(10000000));
+                if (!mImageHandles.containsValue(imageHandle)) {
+                    debug("New Allocated handle " + imageHandle);
+                    break;
+                }
             }
-
-            debug("Allocated handle " + mNextImageHandle + " --> '" + handle + "'");
-            mNextImageHandle++;
-            return handle;
+            return imageHandle;
         }
     }
 

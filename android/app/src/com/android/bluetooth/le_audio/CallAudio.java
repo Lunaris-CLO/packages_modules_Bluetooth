@@ -85,8 +85,8 @@ public class CallAudio {
     public boolean mVirtualCallStarted;
     private boolean mIsVoipLeaWarEnabled = false;
     private CallAudioMessageHandler mHandler;
-	private BluetoothDevice mActiveDevice = null;
-	private int mActiveProfile = 0;
+    private BluetoothDevice mActiveDevice = null;
+    private int mActiveProfile = 0;
 
     public static int UNKNOWPROFILE = 0;
     public static int HFP = 1;
@@ -96,6 +96,8 @@ public class CallAudio {
 
         // CallAudio handler messages
     public static final int MESSAGE_VOIP_CALL_STARTED = 1;
+
+    public static final int MESSAGE_ACTIVE_HFP_DEVICE_CHANGE = 2;
 
     private final class CallAudioMessageHandler extends Handler {
         private CallAudioMessageHandler(Looper looper) {
@@ -115,6 +117,12 @@ public class CallAudio {
                                                BluetoothHeadset.STATE_AUDIO_CONNECTING,
                                                BluetoothHeadset.STATE_AUDIO_CONNECTED);
                        }
+                   }
+                   break;
+               case MESSAGE_ACTIVE_HFP_DEVICE_CHANGE:
+                   Log.d(TAG, "MESSAGE_ACTIVE_HFP_DEVICE_CHANGE");
+                   if (mActiveDevice != null) {
+                       broadcastActiveDevice(mActiveDevice);
                    }
                    break;
                default:
@@ -198,8 +206,6 @@ public class CallAudio {
             Log.i(TAG, "startScoUsingVirtuallCall, broadcast audio connected ");
             broadcastAudioState(mActiveDevice, BluetoothHeadset.STATE_AUDIO_DISCONNECTED,
                                 BluetoothHeadset.STATE_AUDIO_CONNECTING);
-            CallDevice mCallDevice = mCallDevicesMap.get(mActiveDevice.getAddress());
-            mCallDevice.broadcastScoStatus = BluetoothHeadset.STATE_AUDIO_CONNECTING;
 
             // fake SCO audio connected event if voice audio not connected in 1000ms
             Message msg = mHandler.obtainMessage(MESSAGE_VOIP_CALL_STARTED);
@@ -240,11 +246,22 @@ public class CallAudio {
         if (isVoipLeaWarEnabled() && isVirtualCallStarted()) {
             mVirtualCallStarted = false;
 
-            // fake SCO audio disconnected event while stopScoUsingVirtualCall is invoked
-            broadcastAudioState(mActiveDevice, BluetoothHeadset.STATE_AUDIO_CONNECTED,
-                    BluetoothHeadset.STATE_AUDIO_DISCONNECTED);
-            Log.i(TAG, "stopScoUsingVirtuallCall return true directly ");
-            return true;
+            if (mHandler.hasMessages(MESSAGE_VOIP_CALL_STARTED)) {
+                Log.w(TAG, "stopScoUsingVirtualVoiceCall when start sco");
+                mHandler.removeMessages(MESSAGE_VOIP_CALL_STARTED);
+            }
+
+            CallDevice mCallDevice = mCallDevicesMap.get(mActiveDevice.getAddress());
+            if (mCallDevice != null) {
+                // fake SCO audio disconnected event while stopScoUsingVirtualCall is invoked
+                broadcastAudioState(mActiveDevice, mCallDevice.broadcastScoStatus,
+                        BluetoothHeadset.STATE_AUDIO_DISCONNECTED);
+                Log.i(TAG, "stopScoUsingVirtuallCall return true directly ");
+                return true;
+            } else {
+                Log.i(TAG, "mCallDevice is null.");
+                return false;
+            }
         } else {
             if(headsetService != null) {
                 mVirtualCallStarted = false;
@@ -434,7 +451,7 @@ public class CallAudio {
 
     public void updateActiveDevice(BluetoothDevice device, int profile) {
         Log.d(TAG,"updateActiveDevice, current active device: " + mActiveDevice +
-                  ", current active profile: " + mActiveProfile + ". device: " +
+                  ", current active profile: " + mActiveProfile + ", -> device: " +
                   device + ", profile: " + profile);
 
         if (profile == UNKNOWPROFILE) {
@@ -448,11 +465,26 @@ public class CallAudio {
             return;
         }
         if (device != null) {
-            Log.d(TAG,"updateActiveDevice, update device & profile.");
+            HeadsetService headsetService = mServiceFactory.getHeadsetService();
+            if (headsetService != null && !headsetService.isVirtualCallStarted() &&
+                                          (headsetService.isInCall() ||
+                                           (headsetService.isRinging() &&
+                                            headsetService.isInbandRingingEnabled()))) {
+                broadcastActiveDevice(device);
+            } else {
+                if (mActiveDevice != null && (mActiveProfile != profile ||
+                                              mActiveProfile == HFP)) {
+                    Log.d(TAG,"updateActiveDevice, broadcast previous hfp device to null.");
+                    broadcastActiveDevice(null);
+                }
+                Message msg = mHandler.obtainMessage(MESSAGE_ACTIVE_HFP_DEVICE_CHANGE);
+                mHandler.sendMessageDelayed(msg, 2000);
+            }
             mActiveDevice = device;
             mActiveProfile = profile;
         } else if (mActiveProfile == profile){
-            Log.d(TAG,"updateActiveDevice, update device.");
+            Log.d(TAG,"updateActiveDevice, update device to null.");
+            broadcastActiveDevice(null);
             mActiveDevice = device;
         }
         return;

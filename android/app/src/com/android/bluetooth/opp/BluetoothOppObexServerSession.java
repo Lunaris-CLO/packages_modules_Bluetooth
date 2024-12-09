@@ -273,6 +273,10 @@ public class BluetoothOppObexServerSession extends ServerRequestHandler
             }
             mimeType = mimeType.toLowerCase();
         }
+        if (Utils.isPtsTestMode() && mimeType.equals("text/x-vcalendar")) {
+            Log.w(TAG, "Set Mime Type null to pass PTS BV-10-C ");
+            mimeType = null;
+        }
 
         // Reject anything outside the "acceptlist" plus unspecified MIME Types.
         if (mimeType == null

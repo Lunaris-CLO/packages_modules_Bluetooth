@@ -1229,6 +1229,7 @@ cc_test {
         ":TestMockAudioHalInterface",
         ":TestMockBta",
         ":TestMockStackA2dpApi",
+        ":TestMockStackBtmInterface",
         "a2dp/a2dp_aac.cc",
         "a2dp/a2dp_aac_decoder.cc",
         "a2dp/a2dp_aac_encoder.cc",

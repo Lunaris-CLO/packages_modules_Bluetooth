@@ -1046,7 +1046,7 @@ static void request_read_cb(int conn_id, int trans_id, const RawAddress& bda,
   } else if (attr_handle == 104) {
     printf("%s:: Invalid transport access over BR/EDR \n", __FUNCTION__);
     status = application_error;
-  } else if ((attr_handle >= 74 && attr_handle <= 101) || is_long) {
+  } else if ((attr_handle >= 74 && attr_handle <= 204) || is_long) {
     len = len_long_char;
     if (offset > len) {
       printf("%s:: Invalid offset\n", __FUNCTION__);

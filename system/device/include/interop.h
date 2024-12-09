@@ -363,6 +363,8 @@ typedef enum {
 
   INTEROP_DISALLOW_REJECT_CALL,
 
+  INTEROP_A2DP_DELAY_SNIFF_SUBRATING,
+
   END_OF_INTEROP_LIST
 } interop_feature_t;
 

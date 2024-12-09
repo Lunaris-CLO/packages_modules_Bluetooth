@@ -121,6 +121,15 @@ public class TbsService extends ProfileService {
         sTbsService = instance;
     }
 
+    public synchronized TbsGeneric getTbsGeneric() {
+        if (mTbsGeneric == null) {
+            Log.w(TAG, "getTbsGeneric: TbsGeneric is NULL");
+            return null;
+        }
+        Log.w(TAG, "getTbsGeneric: TbsGeneric init as part of TbsService and available");
+        return mTbsGeneric;
+    }
+
     public void onDeviceUnauthorized(BluetoothDevice device) {
         if (Utils.isPtsTestMode()) {
             Log.d(TAG, "PTS test: setDeviceAuthorized");

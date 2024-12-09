@@ -1462,7 +1462,12 @@ class HeadsetStateMachine extends StateMachine {
                     Log.w(TAG, "call is in ringing/present, suspending a2dp/le audio");
                     mSystemInterface.getAudioManager().setA2dpSuspended(true);
                     if (isAtLeastU()) {
-                        mSystemInterface.getAudioManager().setLeAudioSuspended(true);
+                      BluetoothDevice btDevice = mAdapterService.getActiveDeviceManager()
+                                                    .fetchLeHearingAidActiveDevice();
+                      if (btDevice == null) {
+                          Log.w(TAG,"no le hearing aid device is active, suspend le audio");
+                         mSystemInterface.getAudioManager().setLeAudioSuspended(true);
+                      }
                     }
                 }
                 // Remove pending connection attempts that were deferred during the pending
@@ -2660,7 +2665,12 @@ class HeadsetStateMachine extends StateMachine {
             String phoneNumber = VOIP_CALL_NUMBER;
             int type = PhoneNumberUtils.toaFromString(phoneNumber);
             Log.e(TAG, "processAtClcc: voip phoneNumber " + phoneNumber +" voip type " + type);
-            mNativeInterface.clccResponse(device, 1, 0, 0, 0, false, phoneNumber, type);
+            if (mStateMachineCallState.mNumActive == 0) {
+                mNativeInterface.clccResponse(device, 1, 0, mStateMachineCallState.mCallState, 0,
+                                              false, phoneNumber, type);
+            } else {
+                mNativeInterface.clccResponse(device, 1, 0, 0, 0, false, phoneNumber, type);
+            }
             mNativeInterface.clccResponse(device, 0, 0, 0, 0, false, "", 0);
         } else {
             // In Telecom call, ask Telecom to send send remote phone number

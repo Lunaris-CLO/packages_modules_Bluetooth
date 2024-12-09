@@ -246,13 +246,13 @@ struct codec_manager_impl {
       if (stream_params.get(direction).delay != 0xFFFF)
         delay = stream_params.get(direction).delay;
       else
-	delay = delays_ms.get(direction);
+        delay = delays_ms.get(direction);
+
+      log::debug("is_initial: {}, SupportStreamActiveApi: {}",
+            stream_map.is_initial,LeAudioHalVerifier::SupportsStreamActiveApi());
 
       bluetooth::le_audio::offload_config unicast_cfg = {
-          .stream_map = (stream_map.is_initial ||
-                         LeAudioHalVerifier::SupportsStreamActiveApi())
-                            ? stream_map.streams_map_target
-                            : stream_map.streams_map_current,
+          .stream_map = stream_map.streams_map_target,
           // TODO: set the default value 24 for now, would change it if we
           // support mode bits_per_sample
           .codec_id = id,
@@ -508,7 +508,7 @@ struct codec_manager_impl {
       }
 
       broadcast_config.bits_per_sample =
-          LeAudioCodecConfiguration::kBitsPerSample16;
+          LeAudioCodecConfiguration::kBitsPerSample24;
       broadcast_config.sampling_rate = core_config.GetSamplingFrequencyHz();
       broadcast_config.frame_duration = core_config.GetFrameDurationUs();
       broadcast_config.octets_per_frame = *(core_config.octets_per_codec_frame);

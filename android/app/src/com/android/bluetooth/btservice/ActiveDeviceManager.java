@@ -171,6 +171,8 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
     @GuardedBy("mLock")
     private BluetoothDevice mPendingActiveDevice = null;
 
+    private BluetoothDevice mPendingFallbackDevice = null;
+
     private BluetoothDevice mClassicDeviceToBeActivated = null;
     private BluetoothDevice mClassicDeviceNotToBeActivated = null;
 
@@ -278,6 +280,11 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
         }
     }
 
+    public BluetoothDevice getA2dpFallbackDevice(){
+        Log.d(TAG, "mPendingFallbackDevice:" + mPendingFallbackDevice);
+        return mPendingFallbackDevice;
+    }
+
     private void handleAdapterStateChanged(int currentState) {
         Log.d(TAG, "handleAdapterStateChanged: currentState=" + currentState);
         if (currentState == BluetoothAdapter.STATE_ON) {
@@ -318,21 +325,12 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
                 // New connected device: select it as active
                 // Activate HFP and A2DP at the same time if both profile already connected.
                 if (mHfpConnectedDevices.contains(device)) {
-                    if (isVoipLeaWarEnabled()) {
-                        boolean FirstSho = setLeAudioActiveDevice(null, true);
-                        if (FirstSho) {
-                            setA2dpActiveDevice(device);
-                            setHfpActiveDevice(device);
-                        }
-                        return;
-                    } else {
-                        boolean a2dpMadeActive = setA2dpActiveDevice(device);
-                        boolean hfpMadeActive = setHfpActiveDevice(device);
-                        if ((a2dpMadeActive || hfpMadeActive) && !Utils.isDualModeAudioEnabled()) {
-                            setLeAudioActiveDevice(null, true);
-                        }
-                        return;
+                    boolean a2dpMadeActive = setA2dpActiveDevice(device);
+                    boolean hfpMadeActive = setHfpActiveDevice(device);
+                    if ((a2dpMadeActive || hfpMadeActive) && !Utils.isDualModeAudioEnabled()) {
+                        setLeAudioActiveDevice(null, true);
                     }
+                    return;
                 }
                 // Activate A2DP if audio mode is normal or HFP is not supported or enabled.
                 if (mDbManager.getProfileConnectionPolicy(device, BluetoothProfile.HEADSET)
@@ -394,24 +392,15 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
                 // New connected device: select it as active
                 // Activate HFP and A2DP at the same time once both profile connected.
                 if (mA2dpConnectedDevices.contains(device)) {
-                    if (isVoipLeaWarEnabled()) {
-                        boolean FirstSho = setLeAudioActiveDevice(null, true);
-                        if (FirstSho) {
-                            setA2dpActiveDevice(device);
-                            setHfpActiveDevice(device);
-                        }
-                        return;
-                    } else {
-                        boolean a2dpMadeActive = setA2dpActiveDevice(device);
-                        boolean hfpMadeActive = setHfpActiveDevice(device);
+                    boolean a2dpMadeActive = setA2dpActiveDevice(device);
+                    boolean hfpMadeActive = setHfpActiveDevice(device);
 
-                        /* Make LEA inactive if device is made active for any classic audio profile
-                                              and dual mode is disabled */
-                        if ((a2dpMadeActive || hfpMadeActive) && !Utils.isDualModeAudioEnabled()) {
-                            setLeAudioActiveDevice(null, true);
-                        }
-                        return;
+                    /* Make LEA inactive if device is made active for any classic audio profile
+                    and dual mode is disabled */
+                    if ((a2dpMadeActive || hfpMadeActive) && !Utils.isDualModeAudioEnabled()) {
+                        setLeAudioActiveDevice(null, true);
                     }
+                    return;
                 }
                 // Activate HFP if audio mode is not normal or A2DP is not supported or enabled.
                 if (mDbManager.getProfileConnectionPolicy(device, BluetoothProfile.A2DP)
@@ -511,22 +500,11 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
             if (mHearingAidActiveDevices.isEmpty()
                     && mLeHearingAidActiveDevice == null
                     && mPendingLeHearingAidActiveDevice.isEmpty()) {
-                if (isVoipLeaWarEnabled()) {
-                    boolean a2dpMadeInactive = setA2dpActiveDevice(null, true);
-                    boolean hfpMadeInactive = true;
-                    if (mHfpActiveDevice != null) {
-                        hfpMadeInactive = setHfpActiveDevice(null);
-                    }
-                    if (a2dpMadeInactive && hfpMadeInactive) {
-                        setLeAudioActiveDevice(device);
-                    }
-                } else {
-                    // New connected device: select it as active
-                    boolean leAudioMadeActive = setLeAudioActiveDevice(device);
-                    if (leAudioMadeActive && !Utils.isDualModeAudioEnabled()) {
-                        setA2dpActiveDevice(null, true);
-                        setHfpActiveDevice(null);
-                    }
+                // New connected device: select it as active
+                boolean leAudioMadeActive = setLeAudioActiveDevice(device);
+                if (leAudioMadeActive && !Utils.isDualModeAudioEnabled()) {
+                    setA2dpActiveDevice(null, true);
+                    setHfpActiveDevice(null);
                 }
             } else if (mPendingLeHearingAidActiveDevice.contains(device)) {
                 if (setLeHearingAidActiveDevice(device)) {
@@ -774,7 +752,6 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
             CallAudio mCallAudio = CallAudio.get();
             if (mCallAudio != null && isVoipLeaWarEnabled()) {
                 mCallAudio.updateActiveDevice(device, mCallAudio.HFP);
-                mCallAudio.broadcastActiveDevice(device);
             }
 
             if (!Objects.equals(mHfpActiveDevice, device)) {
@@ -834,7 +811,6 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
                         && mDbManager.getProfileConnectionPolicy(device, BluetoothProfile.A2DP)
                                 == BluetoothProfile.CONNECTION_POLICY_ALLOWED) {
                     mClassicDeviceToBeActivated = device;
-                    setA2dpActiveDevice(device);
                     mHandler.postDelayed(
                             () -> mClassicDeviceToBeActivated = null,
                             mClassicDeviceToBeActivated,
@@ -883,8 +859,6 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
             CallAudio mCallAudio = CallAudio.get();
             if (mCallAudio != null && isVoipLeaWarEnabled()) {
                 mCallAudio.updateActiveDevice(device, mCallAudio.LE_AUDIO_VOICE);
-                //Fake HFP active device for VoIP WAR
-                mCallAudio.broadcastActiveDevice(device);
             }
 
             if (device != null && !mLeAudioConnectedDevices.contains(device)) {
@@ -1316,9 +1290,18 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
         BluetoothDevice device = mDbManager.getMostRecentlyConnectedDevicesInList(connectedDevices);
         if (device != null) {
             if (mAudioManager.getMode() == AudioManager.MODE_NORMAL) {
+                Log.d(TAG, "device: " + device + ",a2dpFallbackDevice: " + a2dpFallbackDevice);
                 if (Objects.equals(a2dpFallbackDevice, device)) {
                     Log.d(TAG, "Found an A2DP fallback device: " + device);
-                    setA2dpActiveDevice(device);
+                    if (Objects.equals(a2dpFallbackDevice, headsetFallbackDevice)) {
+                        mPendingFallbackDevice = a2dpFallbackDevice;
+                        Log.d(TAG, "Setting the Active device as null, mPendingFallbackDevice: " +
+                                                                        mPendingFallbackDevice);
+                        setA2dpActiveDevice(null, true);
+                    } else {
+                        Log.d(TAG, "Setting Active device: " + device);
+                        setA2dpActiveDevice(device);
+                    }
                     if (Objects.equals(headsetFallbackDevice, device)) {
                         setHfpActiveDevice(device);
                     } else {
@@ -1343,6 +1326,7 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
                     setHearingAidActiveDevice(null, true);
                 }
             } else {
+                Log.d(TAG, "device: " + device + ", headsetFallbackDevice: " + headsetFallbackDevice);
                 if (Objects.equals(headsetFallbackDevice, device)) {
                     Log.d(TAG, "Found a HFP fallback device: " + device);
                     setHfpActiveDevice(device);
@@ -1415,7 +1399,9 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
     public BluetoothDevice fetchLeAudioActiveDevice() {
         return mLeAudioActiveDevice;
     }
-
+   public BluetoothDevice fetchLeHearingAidActiveDevice() {
+        return mLeHearingAidActiveDevice;
+    }
     @GuardedBy("mLock")
     private long getHearingAidActiveHiSyncIdLocked() {
         final HearingAidService hearingAidService = mFactory.getHearingAidService();

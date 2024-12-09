@@ -12,6 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 package com.android.bluetooth.channelsoundingtestapp;
@@ -19,31 +23,35 @@ package com.android.bluetooth.channelsoundingtestapp;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.le.ChannelSoundingParams;
 import android.bluetooth.le.DistanceMeasurementManager;
 import android.bluetooth.le.DistanceMeasurementMethod;
 import android.bluetooth.le.DistanceMeasurementParams;
 import android.bluetooth.le.DistanceMeasurementResult;
 import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.Context;
+import android.text.TextUtils;
+import android.util.Log;
 import android.util.Pair;
-
 import androidx.annotation.Nullable;
-
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 class DistanceMeasurementInitiator {
 
     private static final int DISTANCE_MEASUREMENT_DURATION_SEC = 3600;
-    private static final int GATT_MTU_SIZE = 512;
+    private int mode_int = 0;
+    private int duration_int = 0;
+    private int freq_int = 0;
     private static final List<Pair<Integer, String>> mDistanceMeasurementMethodMapping =
             List.of(
                     new Pair<>(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_AUTO, "AUTO"),
@@ -58,9 +66,8 @@ class DistanceMeasurementInitiator {
     private final Context mApplicationContext;
     private final Executor mBtExecutor;
     private final BtDistanceMeasurementCallback mBtDistanceMeasurementCallback;
-    private String mTargetBtAddress = "";
-    @Nullable private BluetoothGatt mBluetoothGatt = null;
     @Nullable private DistanceMeasurementSession mSession = null;
+    @Nullable private BluetoothDevice mTargetDevice = null;
 
     DistanceMeasurementInitiator(
             Context applicationContext,
@@ -77,72 +84,9 @@ class DistanceMeasurementInitiator {
         mBtExecutor = Executors.newSingleThreadExecutor();
     }
 
-    void setTargetBtAddress(String btAddress) {
-        mTargetBtAddress = btAddress;
+    void setTargetDevice(BluetoothDevice targetDevice) {
+        mTargetDevice = targetDevice;
     }
-
-    @SuppressLint("MissingPermission") // permissions are checked upfront
-    List<String> updatePairedDevice() {
-        List<String> arrayList = new ArrayList<>();
-        Set<BluetoothDevice> bonded_devices = mBluetoothAdapter.getBondedDevices();
-        for (BluetoothDevice device : bonded_devices) {
-            arrayList.add(device.getAddress());
-        }
-        printLog("Num of paired Devices: " + arrayList.size());
-        return arrayList;
-    }
-
-    @SuppressLint("MissingPermission") // permissions are checked upfront
-    void connectGatt() {
-        if (mTargetBtAddress == null) {
-            printLog("A paired device must be selected first.");
-            return;
-        }
-        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mTargetBtAddress);
-        BluetoothGattCallback gattCallback =
-                new BluetoothGattCallback() {
-                    @Override
-                    public void onConnectionStateChange(
-                            BluetoothGatt gatt, int status, int newState) {
-                        printLog(
-                                "onConnectionStateChange status:"
-                                        + status
-                                        + ", newState:"
-                                        + newState);
-                        if (newState == BluetoothProfile.STATE_CONNECTED) {
-                            printLog(gatt.getDevice().getName() + " is connected");
-                            gatt.requestMtu(GATT_MTU_SIZE);
-                            mBluetoothGatt = gatt;
-                            mBtDistanceMeasurementCallback.onGattConnected();
-                        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                            printLog("disconnected from " + gatt.getDevice().getName());
-                            mBtDistanceMeasurementCallback.onGattDisconnected();
-                            mBluetoothGatt.close();
-                            mBluetoothGatt = null;
-                        }
-                    }
-
-                    public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-                        if (status == BluetoothGatt.GATT_SUCCESS) {
-                            printLog("MTU changed to: " + mtu);
-                        } else {
-                            printLog("MTU change failed: " + status);
-                        }
-                    }
-                };
-        printLog("Connect gatt to " + device.getAddress());
-
-        device.connectGatt(mApplicationContext, false, gattCallback, BluetoothDevice.TRANSPORT_LE);
-    }
-
-    @SuppressLint("MissingPermission") // permissions are checked upfront
-    void disconnectGatt() {
-        if (mBluetoothGatt != null) {
-            printLog("disconnect from " + mBluetoothGatt.getDevice().getName());
-            mBluetoothGatt.disconnect();
-        }
-    }
-
     private void printLog(String log) {
         mLoggingListener.onLog(log);
     }
@@ -188,25 +132,53 @@ class DistanceMeasurementInitiator {
     }
 
     @SuppressLint("MissingPermission") // permissions are checked upfront
-    void startDistanceMeasurement(String distanceMeasurementMethodName) {
+    void startDistanceMeasurement(
+        String distanceMeasurementMethodName, String sec_mode, String freq, String duration) {
+      if (mTargetDevice == null) {
+        printLog("do Gatt connect first");
+        return;
+      }
 
-        if (mTargetBtAddress == null) {
-            printLog("pair and select a valid address.");
-            return;
-        }
+      printLog("start CS with device: " + mTargetDevice.getName());
 
-        printLog("start CS with address: " + mTargetBtAddress);
+      ChannelSoundingParams csParams = new ChannelSoundingParams.Builder()
+                                           .setSightType(0)
+                                           .setLocationType(0)
+                                           .setCsSecurityLevel(Integer.parseInt(sec_mode))
+                                           .build();
 
-        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mTargetBtAddress);
-        DistanceMeasurementParams params =
-                new DistanceMeasurementParams.Builder(device)
-                        .setDurationSeconds(DISTANCE_MEASUREMENT_DURATION_SEC)
-                        .setFrequency(DistanceMeasurementParams.REPORT_FREQUENCY_LOW)
-                        .setMethodId(getDistanceMeasurementMethodId(distanceMeasurementMethodName))
-                        .build();
-        DistanceMeasurementManager distanceMeasurementManager =
-                mBluetoothAdapter.getDistanceMeasurementManager();
-        distanceMeasurementManager.startMeasurementSession(params, mBtExecutor, mTestcallback);
+      int freqint = 0;
+      switch (freq) {
+        case "REPORT_FREQUENCY_LOW":
+          freqint = 0;
+          break;
+        case "REPORT_FREQUENCY_MEDIUM":
+          freqint = 1;
+          break;
+        case "REPORT_FREQUENCY_HIGH":
+          freqint = 2;
+          break;
+      }
+
+      freq_int = freqint;
+      mode_int = getDistanceMeasurementMethodId(distanceMeasurementMethodName);
+      if (TextUtils.isEmpty(duration)) {
+        duration = "60";
+      }
+
+      duration_int = Integer.parseInt(duration);
+
+      DistanceMeasurementParams params =
+          new DistanceMeasurementParams.Builder(mTargetDevice)
+              .setDurationSeconds(duration_int)
+              .setFrequency(freqint)
+              .setMethodId(getDistanceMeasurementMethodId(distanceMeasurementMethodName))
+              .setChannelSoundingParams(csParams)
+              .build();
+
+      DistanceMeasurementManager distanceMeasurementManager =
+          mBluetoothAdapter.getDistanceMeasurementManager();
+      distanceMeasurementManager.startMeasurementSession(params, mBtExecutor, mTestcallback);
     }
 
     void stopDistanceMeasurement() {
@@ -237,12 +209,17 @@ class DistanceMeasurementInitiator {
                 }
 
                 public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {
-                    printLog(
-                            "DistanceMeasurement onResult ! "
-                                    + result.getResultMeters()
-                                    + ", "
-                                    + result.getErrorMeters());
-                    mBtDistanceMeasurementCallback.onDistanceResult(result.getResultMeters());
+                  double Result = result.getResultMeters();
+                  BigDecimal bd = new BigDecimal(Double.toString(Result));
+                  bd = bd.setScale(1, RoundingMode.HALF_UP);
+                  double roundedResult = bd.doubleValue();
+                  double Err_Result = result.getErrorMeters();
+                  BigDecimal bd_err = new BigDecimal(Double.toString(Err_Result));
+                  bd_err = bd_err.setScale(1, RoundingMode.HALF_UP);
+                  double rounded_errResult = bd_err.doubleValue();
+                  printLog(
+                      "DistanceMeasurement onResult ! " + roundedResult + ", " + rounded_errResult);
+                  mBtDistanceMeasurementCallback.onDistanceResult(result.getResultMeters());
                 }
             };
 
@@ -255,9 +232,5 @@ class DistanceMeasurementInitiator {
         void onStop();
 
         void onDistanceResult(double distanceMeters);
-
-        void onGattConnected();
-
-        void onGattDisconnected();
     }
 }

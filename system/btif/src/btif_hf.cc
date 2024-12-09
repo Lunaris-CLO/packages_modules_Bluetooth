@@ -705,6 +705,22 @@ static void btif_hf_upstreams_evt(uint16_t event, char* p_param) {
                                        &btif_hf_cb[idx].connected_bda);
       }
       break;
+    case BTA_AG_AT_QAC_EVT:
+      if (is_hfp_aptx_voice_enabled()) {
+        bthf_swb_codec_t codec_s = BTHF_SWB_CODEC_VENDOR_APTX;
+        bthf_swb_config_t config_s = BTHF_SWB_NONE;
+
+        log::verbose(
+            "AG final selected SWB codec is 0x{:02x} 0=Q0 4=Q1 6=Q2 7=Q3",
+            p_data->val.num);
+      p_data->val.num = BTA_AG_SCO_APTX_SWB_SETTINGS_Q0;
+      log::verbose("p->data.num {}",p_data->val.num);
+      config_s = BTHF_SWB_YES;
+      log::verbose("codec {} and config {}", codec_s, config_s);
+      bt_hf_callbacks->SwbCallback(codec_s, config_s,
+                                     &btif_hf_cb[idx].connected_bda);
+      }
+      break;
 
     case BTA_AG_AT_QCS_EVT:
       if (!is_hfp_aptx_voice_enabled()) {
@@ -789,7 +805,7 @@ static bt_status_t connect_int(RawAddress* bd_addr, uint16_t uuid) {
     // control block should be in connecting state
     // Crash here to prevent future code changes from breaking this mechanism
     if (btif_hf_cb[i].state == BTHF_CONNECTION_STATE_CONNECTING) {
-      log::fatal("{}, handle {}, is still in connecting state {}",
+      log::error("{}, handle {}, is still in connecting state {}",
                  btif_hf_cb[i].connected_bda, btif_hf_cb[i].handle,
                  btif_hf_cb[i].state);
     }

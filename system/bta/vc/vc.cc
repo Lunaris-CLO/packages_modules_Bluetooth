@@ -686,7 +686,9 @@ class VolumeControlImpl : public VolumeControl {
 
     if (reason != GATT_CONN_TERMINATE_LOCAL_HOST &&
         device->connecting_actively) {
-      StartOpportunisticConnect(remote_bda);
+      /* Add device into BG connection to accept remote initiated connection */
+      log::info("Initiate background connect to {}", remote_bda);
+      BTA_GATTC_Open(gatt_if_, remote_bda, BTM_BLE_BKG_CONNECT_ALLOW_LIST, false);
     }
   }
 

@@ -544,6 +544,16 @@ void AvrcpService::SendMediaUpdate(bool track_changed, bool play_state,
   }
 }
 
+void AvrcpService::HandlePendingPlay() {
+  log::info("HandlePendingPlay");
+
+  for (const auto& device :
+       instance_->connection_handler_->GetListOfDevices()) {
+    do_in_main_thread(
+        FROM_HERE, base::BindOnce(&Device::HandlePendingPlay, device.get()->Get()));
+  }
+}
+
 void AvrcpService::SendFolderUpdate(bool available_players,
                                     bool addressed_players, bool uids) {
   log::info("available_players={} :  addressed_players={} :  uids={}",

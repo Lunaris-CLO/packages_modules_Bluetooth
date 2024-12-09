@@ -145,6 +145,7 @@ public class BassClientService extends ProfileService {
             new ConcurrentHashMap<>();
     private final LinkedList<BluetoothDevice> mPausedBroadcastSinks = new LinkedList<>();
     private final Deque<AddSourceData> mPendingAddSources = new ArrayDeque<>();
+    private final Object mPendingAddSourcesLock = new Object();
     private final Map<Integer, HashSet<BluetoothDevice>> mLocalBroadcastReceivers =
             new ConcurrentHashMap<>();
 
@@ -2448,7 +2449,9 @@ public class BassClientService extends ProfileService {
         } else {
             if (!isAllowedToAddSource()) {
                 Log.d(TAG, "Add source to pending list");
-                mPendingAddSources.push(new AddSourceData(sink, sourceMetadata, isGroupOp));
+                synchronized (mPendingAddSourcesLock) {
+                    mPendingAddSources.push(new AddSourceData(sink, sourceMetadata, isGroupOp));
+                }
 
                 return;
             }
@@ -2551,6 +2554,20 @@ public class BassClientService extends ProfileService {
                     message.obj = sourceMetadata;
                     message.arg1 = sourceId;
                     stateMachine.sendMessage(message);
+
+                    if (code != null && code.length != 0) {
+                        sEventLogger.logd(
+                                TAG,
+                                "Set Broadcast Code (Switch Source context): "
+                                        + ("device: " + device)
+                                        + (", broadcastId: " + sourceMetadata.getBroadcastId())
+                                        + (", broadcastName: " + sourceMetadata.getBroadcastName()));
+
+                        message = stateMachine.obtainMessage(BassClientStateMachine.SET_BCAST_CODE);
+                        message.obj = sourceMetadata;
+                        message.arg1 = BassClientStateMachine.ARGTYPE_METADATA;
+                        stateMachine.sendMessage(message);
+                    }
                 } else {
                     mCallbacks.notifySourceAddFailed(
                             device,
@@ -3217,13 +3234,15 @@ public class BassClientService extends ProfileService {
 
             if (!leaudioBroadcastAssistantPeripheralEntrustment()) {
                 /* Add pending sources if there are some */
-                while (!mPendingAddSources.isEmpty()) {
-                    AddSourceData addSourceData = mPendingAddSources.pop();
+                synchronized (mPendingAddSourcesLock) {
+                    while (!mPendingAddSources.isEmpty()) {
+                        AddSourceData addSourceData = mPendingAddSources.pop();
 
-                    addSource(
-                            addSourceData.mSink,
-                            addSourceData.mSourceMetadata,
-                            addSourceData.mIsGroupOp);
+                        addSource(
+                                addSourceData.mSink,
+                                addSourceData.mSourceMetadata,
+                                addSourceData.mIsGroupOp);
+                    }
                 }
             }
         } else if (status == STATUS_LOCAL_STREAM_STREAMING) {

@@ -1348,9 +1348,27 @@ tGATT_SR_CMD* gatt_sr_get_cmd_by_trans_id(tGATT_TCB* p_tcb, uint32_t trans_id) {
  * Returns          True if thetotal application callback count is zero
  *
  ******************************************************************************/
-bool gatt_sr_is_cback_cnt_zero(tGATT_TCB& tcb) {
+bool gatt_sr_is_cback_cnt_zero(tGATT_TCB& tcb, uint16_t cid) {
+  tGATT_SR_CMD* sr_cmd_p;
+  log::verbose("addr{}, cid 0x{:02x} ", tcb.peer_bda, cid);
+  if (cid == tcb.att_lcid) {
+    sr_cmd_p = &tcb.sr_cmd;
+  } else {
+    EattChannel* channel =
+        EattExtension::GetInstance()->FindEattChannelByCid(tcb.peer_bda, cid);
+    if (channel == nullptr) {
+      log::warn("{}, cid 0x{:02x} already disconnected", tcb.peer_bda, cid);
+      return false;
+    }
+    sr_cmd_p = &channel->server_outstanding_cmd_;
+  }
+
+  if (sr_cmd_p == nullptr)
+    return false;
+
   for (uint8_t i = 0; i < GATT_MAX_APPS; i++) {
-    if (tcb.sr_cmd.cback_cnt[i]) {
+    if (sr_cmd_p->cback_cnt[i]) {
+      log::warn("cid 0x{:02x} cb count is non zero", cid);
       return false;
     }
   }

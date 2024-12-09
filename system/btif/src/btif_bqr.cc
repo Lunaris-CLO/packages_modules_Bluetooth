@@ -709,6 +709,17 @@ static void AddLinkQualityEventToQueue(uint8_t length,
   if (bqrItf != NULL) {
     bd_addr = p_bqr_event->bqr_link_quality_event_.bdaddr;
     if (bd_addr.IsEmpty()) {
+      if (p_bqr_event->bqr_link_quality_event_.quality_report_id ==
+          QUALITY_REPORT_ID_SCO_VOICE_CHOPPY) {
+        const RawAddress* addr = BTM_ReadScoBdAddrByHandle(
+            p_bqr_event->bqr_link_quality_event_.connection_handle);
+        if (addr) {
+          bd_addr = *addr;
+        }
+      }
+    }
+
+    if (bd_addr.IsEmpty()) {
       tBTM_SEC_DEV_REC* dev = btm_find_dev_by_handle(
           p_bqr_event->bqr_link_quality_event_.connection_handle);
       if (dev != NULL) {

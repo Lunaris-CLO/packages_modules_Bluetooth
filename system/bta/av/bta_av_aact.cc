@@ -649,7 +649,7 @@ void bta_av_role_res(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
       p_scb->wait &= ~BTA_AV_WAIT_ROLE_SW_BITS;
       if (p_data->role_res.hci_status != HCI_SUCCESS) {
         p_scb->role &= ~BTA_AV_ROLE_START_INT;
-        bta_sys_idle(BTA_ID_AV, bta_av_cb.audio_open_cnt, p_scb->PeerAddress());
+        bta_sys_idle(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
         /* start failed because of role switch. */
         tBTA_AV bta_av_data = {
             .start =
@@ -1968,9 +1968,9 @@ void bta_av_conn_failed(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
 void bta_av_do_start(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
   log::info(
       "A2dp stream start peer:{} sco_occupied:{} av_role:0x{:x} started:{} "
-      "wait:0x{:x}",
+      "wait:0x{:x} p_scb->hdi:{}",
       p_scb->PeerAddress(), bta_av_cb.sco_occupied, p_scb->role, p_scb->started,
-      p_scb->wait);
+      p_scb->wait, p_scb->hdi);
   if (bta_av_cb.sco_occupied) {
     log::warn("A2dp stream start failed");
     bta_av_start_failed(p_scb, p_data);
@@ -2008,7 +2008,7 @@ void bta_av_do_start(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
   }
 
   p_scb->role |= BTA_AV_ROLE_START_INT;
-  bta_sys_busy(BTA_ID_AV, bta_av_cb.audio_open_cnt, p_scb->PeerAddress());
+  bta_sys_busy(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
   /* disallow role switch during streaming, only if we are the central role
    * i.e. allow role switch, if we are peripheral.
    * It would not hurt us, if the peer device wants us to be central
@@ -2049,13 +2049,20 @@ void bta_av_str_stopped(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
   uint8_t start = p_scb->started;
   bool sus_evt = true;
   BT_HDR* p_buf;
+  bool is_delay_subrate = interop_match_addr_or_name
+                                    (INTEROP_A2DP_DELAY_SNIFF_SUBRATING,
+                                    &p_scb->PeerAddress(),
+                                    &btif_storage_get_remote_device_property);
 
   log::info("peer {} bta_handle:0x{:x} audio_open_cnt:{}, p_data {} start:{}",
             p_scb->PeerAddress(), p_scb->hndl, bta_av_cb.audio_open_cnt,
             fmt::ptr(p_data), start);
 
-  bta_sys_idle(BTA_ID_AV, bta_av_cb.audio_open_cnt, p_scb->PeerAddress());
-  BTM_unblock_role_switch_and_sniff_mode_for(p_scb->PeerAddress());
+  if(!is_delay_subrate) {
+    log::info("Not delaying Sniff Subrating");
+    bta_sys_idle(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
+    BTM_unblock_role_switch_and_sniff_mode_for(p_scb->PeerAddress());
+  }
 
   if (p_scb->co_started) {
     if (bta_av_cb.offload_started_hndl == p_scb->hndl) {
@@ -2071,6 +2078,12 @@ void bta_av_str_stopped(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
     p_scb->co_started = false;
 
     p_scb->p_cos->stop(p_scb->hndl, p_scb->PeerAddress());
+  }
+
+  if(is_delay_subrate) {
+    log::info("Delayed Sniff Subrating");
+    bta_sys_idle(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
+    BTM_unblock_role_switch_and_sniff_mode_for(p_scb->PeerAddress());
   }
 
   /* if q_info.a2dp_list is not empty, drop it now */
@@ -2419,7 +2432,7 @@ void bta_av_start_ok(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
   if (p_data && (p_data->hdr.offset != BTA_AV_RS_NONE)) {
     p_scb->wait &= ~BTA_AV_WAIT_ROLE_SW_BITS;
     if (p_data->hdr.offset == BTA_AV_RS_FAIL) {
-      bta_sys_idle(BTA_ID_AV, bta_av_cb.audio_open_cnt, p_scb->PeerAddress());
+      bta_sys_idle(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
       tBTA_AV bta_av_data = {
           .start =
               {
@@ -2467,9 +2480,9 @@ void bta_av_start_ok(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
   }
 
   /* tell role manager to check M/S role */
-  bta_sys_conn_open(BTA_ID_AV, p_scb->app_id, p_scb->PeerAddress());
+  bta_sys_conn_open(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
 
-  bta_sys_busy(BTA_ID_AV, bta_av_cb.audio_open_cnt, p_scb->PeerAddress());
+  bta_sys_busy(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
 
   if (p_scb->media_type == AVDT_MEDIA_TYPE_AUDIO) {
     /* in normal logic, conns should be bta_av_cb.audio_count - 1,
@@ -2564,12 +2577,12 @@ void bta_av_start_ok(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
  ******************************************************************************/
 void bta_av_start_failed(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* /* p_data */) {
   log::error(
-      "peer {} bta_handle:0x{:x} audio_open_cnt:{} started:{} co_started:{}",
-      p_scb->PeerAddress(), p_scb->hndl, bta_av_cb.audio_open_cnt,
+      "peer {} bta_handle:0x{:x} p_scb->hdi:{} started:{} co_started:{}",
+      p_scb->PeerAddress(), p_scb->hndl, p_scb->hdi,
       p_scb->started, p_scb->co_started);
 
   if (!p_scb->started && !p_scb->co_started) {
-    bta_sys_idle(BTA_ID_AV, bta_av_cb.audio_open_cnt, p_scb->PeerAddress());
+    bta_sys_idle(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
     notify_start_failed(p_scb);
   }
 
@@ -2699,7 +2712,7 @@ void bta_av_suspend_cfm(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
     p_scb->cong = false;
   }
 
-  bta_sys_idle(BTA_ID_AV, bta_av_cb.audio_open_cnt, p_scb->PeerAddress());
+  bta_sys_idle(BTA_ID_AV, p_scb->hdi, p_scb->PeerAddress());
   BTM_unblock_role_switch_and_sniff_mode_for(p_scb->PeerAddress());
 
   /* in case that we received suspend_ind, we may need to call co_stop here */

@@ -42,6 +42,10 @@ const RawAddress* BTM_ReadScoBdAddr(uint16_t /* sco_inx */) {
   inc_func_call_count(__func__);
   return nullptr;
 }
+const RawAddress* BTM_ReadScoBdAddrByHandle(uint16_t /* hci_handle */) {
+  inc_func_call_count(__func__);
+  return nullptr;
+}
 tBTM_STATUS BTM_CreateSco(const RawAddress* /* remote_bda */,
                           bool /* is_orig */, uint16_t /* pkt_types */,
                           uint16_t* /* p_sco_inx */,

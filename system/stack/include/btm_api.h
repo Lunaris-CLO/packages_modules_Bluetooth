@@ -484,6 +484,18 @@ void BTM_RemoveSco(const RawAddress& bda);
 
 /*******************************************************************************
  *
+ * Function         BTM_ReadScoBdAddrByHandle
+ *
+ * Description      This function is read the remote BD Address by a specific
+ *                  SCO connection handle.
+ *
+ * Returns          pointer to BD address or NULL if not known
+ *
+ ******************************************************************************/
+[[nodiscard]] const RawAddress* BTM_ReadScoBdAddrByHandle(uint16_t hci_handle);
+
+/*******************************************************************************
+ *
  * Function         BTM_SetEScoMode
  *
  * Description      This function sets up the negotiated parameters for SCO or

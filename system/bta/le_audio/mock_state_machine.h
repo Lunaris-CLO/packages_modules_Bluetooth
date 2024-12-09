@@ -108,6 +108,8 @@ class MockLeAudioGroupStateMachine
               (bluetooth::le_audio::LeAudioDeviceGroup * group,
                bluetooth::le_audio::LeAudioDevice* leAudioDevice),
               (override));
-
+  MOCK_METHOD((void), RemoveCigForGroup,
+              (bluetooth::le_audio::LeAudioDeviceGroup * group),
+              (override));
   static void SetMockInstanceForTesting(MockLeAudioGroupStateMachine* machine);
 };

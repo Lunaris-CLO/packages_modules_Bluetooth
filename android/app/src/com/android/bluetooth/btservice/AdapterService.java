@@ -5173,15 +5173,6 @@ public class AdapterService extends Service {
                  */
                 mLeAudioService.removeActiveDevice(true /* hasFallbackDevice */);
             } else {
-                CallAudio mCallAudio = CallAudio.get();
-                if (mCallAudio != null && mCallAudio.isVoipLeaWarEnabled()) {
-                    BluetoothDevice curActiveDevice = mCallAudio.getActiveDevice();
-                    int curActiveProfile = mCallAudio.getActiveProfile();
-                    if (curActiveDevice != null && curActiveProfile == mCallAudio.HFP) {
-                        Log.i(TAG, "setActiveDevice: HFP active, set to null " + curActiveDevice);
-                        mHeadsetService.setActiveDevice(null);
-                    }
-                }
                 mLeAudioService.setActiveDevice(device);
             }
         }
@@ -5208,15 +5199,6 @@ public class AdapterService extends Service {
         }
 
         if (setHeadset && hfpSupported) {
-            CallAudio mCallAudio = CallAudio.get();
-            if (mCallAudio != null && mCallAudio.isVoipLeaWarEnabled()) {
-                BluetoothDevice curActiveDevice = mCallAudio.getActiveDevice();
-                int curActiveProfile = mCallAudio.getActiveProfile();
-                if (curActiveDevice != null && curActiveProfile == mCallAudio.LE_AUDIO_VOICE) {
-                    Log.i(TAG, "setActiveDevice: LE Audio active, set to null " + curActiveDevice);
-                    mLeAudioService.removeActiveDevice(true /* hasFallbackDevice */);
-                }
-            }
             Log.i(TAG, "setActiveDevice: Setting active Headset " + device);
             mHeadsetService.setActiveDevice(device);
         }

@@ -205,7 +205,7 @@ void l2cu_release_lcb(tL2C_LCB* p_lcb) {
 
   /* Release any held buffers */
   if (p_lcb->link_xmit_data_q) {
-    while (!list_is_empty(p_lcb->link_xmit_data_q)) {
+    while (p_lcb->link_xmit_data_q != NULL && !list_is_empty(p_lcb->link_xmit_data_q)) {
       BT_HDR* p_buf = static_cast<BT_HDR*>(list_front(p_lcb->link_xmit_data_q));
       list_remove(p_lcb->link_xmit_data_q, p_buf);
       osi_free(p_buf);

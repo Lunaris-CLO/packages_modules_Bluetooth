@@ -358,6 +358,7 @@ class HeadsetSystemInterface {
         Intent intent = new Intent(Intent.ACTION_VOICE_COMMAND);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
+            Log.i(TAG, "activateVoiceRecognition, starting VR app");
             mHeadsetService.startActivity(intent);
         } catch (ActivityNotFoundException e) {
             Log.e(TAG, "activateVoiceRecognition, failed due to activity not found for " + intent);

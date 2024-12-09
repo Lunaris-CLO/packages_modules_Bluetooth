@@ -1417,6 +1417,30 @@ const RawAddress* BTM_ReadScoBdAddr(uint16_t sco_inx) {
 
 /*******************************************************************************
  *
+ * Function         BTM_ReadScoBdAddrByHandle
+ *
+ * Description      This function is read the remote BD Address by a specific
+ *                  SCO connection handle.
+ *
+ * Returns          pointer to BD address or NULL if not known
+ *
+ ******************************************************************************/
+const RawAddress* BTM_ReadScoBdAddrByHandle(uint16_t hci_handle) {
+  tSCO_CONN* p = &btm_cb.sco_cb.sco_db[0];
+
+  for (int xx = 0; xx < BTM_MAX_SCO_LINKS; xx++, p++) {
+    if ((p->state != SCO_ST_UNUSED) && (p->state != SCO_ST_LISTENING) &&
+        (p->hci_handle == hci_handle) && p->rem_bd_known) {
+      log::debug("BTM_ReadScoBdAddrByHandle handle={:#x}, addr={}",
+          hci_handle, p->esco.data.bd_addr);
+      return &(p->esco.data.bd_addr);
+    }
+  }
+  return NULL;
+}
+
+/*******************************************************************************
+ *
  * Function         BTM_SetEScoMode
  *
  * Description      This function sets up the negotiated parameters for SCO or

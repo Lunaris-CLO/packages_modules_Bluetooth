@@ -298,7 +298,7 @@ void parseVSMetadata(uint8_t total_len, std::vector<uint8_t> metadata,
             UpdateEncoderParams(cig_id, cis_id, vs_meta_data, 0xFF);
           } else {
             LOG(INFO) << __func__ << ": Cache it untill encoder is up ";
-            ase->metadata = vs_meta_data;
+            ase->vs_metadata = vs_meta_data;
             ase->is_vsmetadata_available = true;
           }
           vs_meta_data.clear();
@@ -464,6 +464,7 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
         if (!PrepareAndSendCodecConfigToTheGroup(group)) {
           group->PrintDebugState();
           ClearGroup(group, true);
+          return false;
         }
         break;
 
@@ -2041,6 +2042,19 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
       } while ((ase = leAudioDevice->GetNextActiveAse(ase)));
     } while ((leAudioDevice = group->GetNextActiveDevice(leAudioDevice)));
 
+    bool ignore_cis_create = false;
+    for (auto& it : conn_pairs) {
+      if (!it.cis_conn_handle) {
+        log::error("cis handle 0. Is CreateCig skipped ?");
+        ignore_cis_create = true;
+        break;
+      }
+    }
+    if (ignore_cis_create) {
+      log::error("cannot proceed cis create");
+      return false;
+    }
+
     IsoManager::GetInstance()->EstablishCis(
         {.conn_pairs = std::move(conn_pairs)});
 
@@ -2349,6 +2363,11 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
 
     for (; leAudioDevice;
          leAudioDevice = group->GetNextActiveDevice(leAudioDevice)) {
+      if (!group->cig.AssignCisIds(leAudioDevice)) {
+        log::error("unable to assign CIS IDs");
+        StopStream(group);
+        return false;
+      }
       PrepareAndSendCodecConfigure(group, leAudioDevice);
     }
     return true;
@@ -2766,6 +2785,8 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
         }
 
         cancel_watchdog_if_needed(group->group_id_);
+        ReleaseCisIds(group);
+        RemoveCigForGroup(group);
 
         state_machine_callbacks_->StatusReportCb(
             group->group_id_, GroupStreamStatus::CONFIGURED_AUTONOMOUS);
@@ -2819,7 +2840,9 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
           return;
         }
 
-        if (group->GetState() == AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING) {
+        if (group->GetState() == AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING ||
+            (group->GetTargetState() == AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING &&
+                                       group->cig.GetState() == CigState::CREATED)) {
           /* We are here because of the reconnection of the single device. */
           PrepareAndSendEnable(leAudioDevice);
           return;

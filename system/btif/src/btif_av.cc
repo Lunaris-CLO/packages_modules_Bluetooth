@@ -2898,6 +2898,12 @@ bool BtifAvStateMachine::StateStarted::ProcessEvent(uint32_t event,
       peer_.StateMachine().TransitionTo(BtifAvStateMachine::kStateClosing);
       break;
 
+    case BTIF_AV_CONNECT_REQ_EVT: {
+      log::warn("Peer {} : Ignore {} for same device", peer_.PeerAddress(),
+              BtifAvEvent::EventName(event));
+      btif_queue_advance();
+    } break;
+
     case BTA_AV_SUSPEND_EVT: {
       log::info("Peer {} : event={} status={} initiator={} flags={}",
                 peer_.PeerAddress(), BtifAvEvent::EventName(event),
@@ -4004,6 +4010,11 @@ static bt_status_t src_set_active_sink(const RawAddress& peer_address) {
                                 peer_address, std::move(peer_ready_promise)));
   if (status == BT_STATUS_SUCCESS) {
     peer_ready_future.wait();
+    if (!peer_address.IsEmpty() &&
+         bluetooth::avrcp::AvrcpService::Get() != nullptr) {
+        log::info("check pending play cmd");
+        bluetooth::avrcp::AvrcpService::Get()->HandlePendingPlay();
+    }
   } else {
     log::warn("BTIF AV Source fails to change peer");
   }

@@ -1301,6 +1301,7 @@ struct ase {
   AseQosPreferences qos_preferences;
 
   std::vector<uint8_t> metadata;
+  std::vector<uint8_t> vs_metadata;
 
   bool is_vsmetadata_available;
 

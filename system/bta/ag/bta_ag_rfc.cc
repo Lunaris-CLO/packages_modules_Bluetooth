@@ -32,7 +32,8 @@
 #include "stack/include/main_thread.h"
 #include "stack/include/port_api.h"
 #include "types/raw_address.h"
-
+#include "stack/include/btm_client_interface.h"
+#include "stack/include/bt_psm_types.h"
 /* Event mask for RfCOMM port callback */
 #define BTA_AG_PORT_EV_MASK PORT_EV_RXCHAR
 
@@ -337,6 +338,9 @@ bool bta_ag_is_server_closed(tBTA_AG_SCB* p_scb) {
  ******************************************************************************/
 void bta_ag_rfc_do_open(tBTA_AG_SCB* p_scb, const tBTA_AG_DATA& data) {
   int management_callback_index = bta_ag_scb_to_idx(p_scb) - 1;
+  get_btm_client_interface().security.BTM_SetSecurityLevel(
+         true, "HFP_AG", BTM_SEC_SERVICE_AG_HANDSFREE , (BTA_SEC_AUTHENTICATE | BTA_SEC_ENCRYPT),
+         BT_PSM_RFCOMM,BTM_SEC_PROTO_RFCOMM, 0);
   int status = RFCOMM_CreateConnectionWithSecurity(
       bta_ag_uuid[p_scb->conn_service], p_scb->peer_scn, false, BTA_AG_MTU,
       p_scb->peer_addr, &(p_scb->conn_handle),

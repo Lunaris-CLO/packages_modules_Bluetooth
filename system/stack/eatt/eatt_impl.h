@@ -119,6 +119,9 @@ struct eatt_impl {
       channel->cl_cmd_q_.clear();
     }
 
+    log::warn("Channel {:c}, for device {} use_count{}",
+                lcid, channel->bda_, channel.use_count());
+    channel.reset();
     eatt_dev->eatt_channels.erase(lcid);
 
     if (eatt_dev->eatt_channels.size() == 0) eatt_dev->eatt_tcb_ = NULL;
@@ -501,7 +504,10 @@ struct eatt_impl {
     }
 
     if (!is_channel_connection_pending(eatt_dev)) {
-      eatt_retry_after_collision_if_needed(eatt_dev);
+      if (reason != L2CAP_CONN_NO_RESOURCES) {
+        //Avoiding retry if insufficient resources at remote
+        eatt_retry_after_collision_if_needed(eatt_dev);
+      }
     }
   }
 
@@ -554,17 +560,11 @@ struct eatt_impl {
   }
 
   void connect_eatt_wrap(eatt_device* eatt_dev) {
-    if (stack_config_get_interface()
-            ->get_pts_eatt_peripheral_collision_support()) {
-      /* For PTS case, lets assume we support only 5 channels */
-      log::info("Number of existing channels {}",
-                (int)eatt_dev->eatt_channels.size());
-      connect_eatt(eatt_dev, L2CAP_CREDIT_BASED_MAX_CIDS -
-                                 (int)eatt_dev->eatt_channels.size());
-      return;
-    }
+    log::info("Number of existing channels {}",
+        (int)eatt_dev->eatt_channels.size());
 
-    connect_eatt(eatt_dev);
+    connect_eatt(eatt_dev, L2CAP_CREDIT_BASED_MAX_CIDS -
+        (int)eatt_dev->eatt_channels.size());
   }
 
   void connect_eatt(eatt_device* eatt_dev,

@@ -73,6 +73,11 @@ bool BTM_SecIsSecurityPending(const RawAddress& bd_addr) {
   return btm_interface->SecIsSecurityPending(bd_addr);
 }
 
+bool BTM_SecIsLeSecurityPending(const RawAddress& bd_addr) {
+  log::assert_that(btm_interface != nullptr, "Mock btm interface not set!");
+  return btm_interface->SecIsLeSecurityPending(bd_addr);
+}
+
 tBTM_SEC_DEV_REC* btm_find_dev(const RawAddress& bd_addr) {
   log::assert_that(btm_interface != nullptr, "Mock btm interface not set!");
   return btm_interface->FindDevice(bd_addr);

@@ -910,16 +910,6 @@ void bta_ag_setcodec(tBTA_AG_SCB* p_scb, const tBTA_AG_DATA& data) {
   (*bta_ag_cb.p_cback)(BTA_AG_CODEC_EVT, (tBTA_AG*)&val);
 }
 
-static void bta_ag_collision_timer_cback(void* data) {
-  if (data == nullptr) {
-    log::error("data should never be null in a timer callback");
-    return;
-  }
-  /* If the peer haven't opened AG connection     */
-  /* we will restart opening process.             */
-  bta_ag_resume_open(static_cast<tBTA_AG_SCB*>(data));
-}
-
 void bta_ag_handle_collision(tBTA_AG_SCB* p_scb,
                              const tBTA_AG_DATA& /* data */) {
   /* Cancel SDP if it had been started. */
@@ -932,13 +922,17 @@ void bta_ag_handle_collision(tBTA_AG_SCB* p_scb,
     bta_ag_free_db(p_scb, tBTA_AG_DATA::kEmpty);
   }
 
+  RawAddress peer_addr = p_scb->peer_addr;
+  p_scb->peer_addr = RawAddress::kEmpty;
+  log::verbose("sending RFCOMM fail event to btif for dev: {}",
+            peer_addr);
+  bta_ag_cback_open(p_scb, peer_addr, BTA_AG_FAIL_RFCOMM);
+
   /* reopen registered servers */
   /* Collision may be detected before or after we close servers. */
   if (bta_ag_is_server_closed(p_scb)) {
     bta_ag_start_servers(p_scb, p_scb->reg_services);
   }
 
-  /* Start timer to han */
-  alarm_set_on_mloop(p_scb->collision_timer, BTA_AG_COLLISION_TIMEOUT_MS,
-                     bta_ag_collision_timer_cback, p_scb);
+  /* connection is retried from apps, no need for connection attempt again */
 }

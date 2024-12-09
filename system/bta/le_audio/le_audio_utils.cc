@@ -72,17 +72,17 @@ LeAudioContextType AudioContentToLeAudioContext(
     case AUDIO_USAGE_GAME:
       return LeAudioContextType::GAME;
     case AUDIO_USAGE_NOTIFICATION:
-      return LeAudioContextType::MEDIA;
+      return LeAudioContextType::NOTIFICATIONS;
     case AUDIO_USAGE_NOTIFICATION_TELEPHONY_RINGTONE:
       return LeAudioContextType::RINGTONE;
     case AUDIO_USAGE_ALARM:
-      return LeAudioContextType::MEDIA;
+      return LeAudioContextType::ALERTS;
     case AUDIO_USAGE_EMERGENCY:
       return LeAudioContextType::EMERGENCYALARM;
     case AUDIO_USAGE_ASSISTANCE_NAVIGATION_GUIDANCE:
       return LeAudioContextType::INSTRUCTIONAL;
     case AUDIO_USAGE_ASSISTANCE_SONIFICATION:
-      return LeAudioContextType::MEDIA;
+      return LeAudioContextType::SOUNDEFFECTS;
     default:
       break;
   }
@@ -223,9 +223,9 @@ AudioContexts GetAudioContextsFromSinkMetadata(
         track.source == AUDIO_SOURCE_CAMCORDER ) {
       track_context = LeAudioContextType::LIVE;
 
-    } else if (track.source == AUDIO_SOURCE_VOICE_COMMUNICATION) {
+    } else if (track.source == AUDIO_SOURCE_VOICE_COMMUNICATION ||
+               track.source == AUDIO_SOURCE_VOICE_CALL) {
       track_context = LeAudioContextType::CONVERSATIONAL;
-
     } else {
       /* Fallback to voice assistant
        * This will handle also a case when the device is

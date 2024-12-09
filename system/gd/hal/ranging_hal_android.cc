@@ -39,6 +39,7 @@ using aidl::android::hardware::bluetooth::ranging::IBluetoothChannelSoundingSess
 using aidl::android::hardware::bluetooth::ranging::IBluetoothChannelSoundingSessionCallback;
 using aidl::android::hardware::bluetooth::ranging::StepTonePct;
 using aidl::android::hardware::bluetooth::ranging::VendorSpecificData;
+using aidl::android::hardware::bluetooth::ranging::ModeType;
 
 namespace bluetooth {
 namespace hal {
@@ -199,10 +200,49 @@ class RangingHalAndroid : public RangingHal {
     }
 
     ChannelSoudingRawData hal_raw_data;
+    std::vector<int> frequencyCompensation_;
+    std::vector<int> measuredFreqOffset_;
+    std::vector<uint8_t> initpacketQuality_;
+    std::vector<uint8_t> initpacketRssiDbm_;
+    std::vector<uint8_t> reflpacketQuality_;
+    std::vector<uint8_t> reflpacketRssiDbm_;
+    std::vector<int> toaTodInitiator_;
+    std::vector<int> todToaReflector_;
     hal_raw_data.numAntennaPaths = raw_data.num_antenna_paths_;
     hal_raw_data.stepChannels = raw_data.step_channel_;
     hal_raw_data.initiatorData.stepTonePcts.emplace(std::vector<std::optional<StepTonePct>>{});
     hal_raw_data.reflectorData.stepTonePcts.emplace(std::vector<std::optional<StepTonePct>>{});
+    hal_raw_data.initiatorData.measuredFreqOffset.emplace(std::vector<int>{});
+    log::error(" tone_pct_initiator_:{}", raw_data.tone_pct_initiator_.size());
+    log::error(" antenna_permutation_index_initiator_:{}", raw_data.antenna_permutation_index_initiator_.size());
+    log::error(" antenna_permutation_index_reflector_:{}", raw_data.antenna_permutation_index_reflector_.size());
+    log::error(" refl_packet_toa_tod_: {}, init_packet_toa_tod_ : {}",
+        raw_data.refl_packet_toa_tod_.size(),
+        raw_data.init_packet_toa_tod_.size());
+    for (uint8_t i = 0; i < raw_data.tone_pct_initiator_[0].size(); i++) {
+      StepTonePct step_tone_pct;
+      for (uint8_t j = 0; j < raw_data.tone_pct_initiator_.size(); j++) {
+        ComplexNumber complex_number;
+        complex_number.imaginary = raw_data.tone_pct_initiator_[j][i].imag();
+        complex_number.real = raw_data.tone_pct_initiator_[j][i].real();
+        step_tone_pct.tonePcts.emplace_back(complex_number);
+        step_tone_pct.toneQualityIndicator.emplace_back(raw_data.tone_quality_indicator_initiator_[j][i]);
+      }
+      step_tone_pct.toneExtensionAntennaIndex = raw_data.antenna_permutation_index_initiator_[i];
+      hal_raw_data.initiatorData.stepTonePcts.value().emplace_back(step_tone_pct);
+    }
+    for (uint8_t i = 0; i < raw_data.tone_pct_reflector_[0].size(); i++) {
+      StepTonePct step_tone_pct;
+      for (uint8_t j = 0; j < raw_data.tone_pct_reflector_.size(); j++) {
+        ComplexNumber complex_number;
+        complex_number.imaginary = raw_data.tone_pct_reflector_[j][i].imag();
+        complex_number.real = raw_data.tone_pct_reflector_[j][i].real();
+        step_tone_pct.tonePcts.emplace_back(complex_number);
+        step_tone_pct.toneQualityIndicator.emplace_back(raw_data.tone_quality_indicator_reflector_[j][i]);
+      }
+      step_tone_pct.toneExtensionAntennaIndex = raw_data.antenna_permutation_index_reflector_[i];
+      hal_raw_data.reflectorData.stepTonePcts.value().emplace_back(step_tone_pct);
+    }
     for (uint8_t i = 0; i < raw_data.tone_pct_initiator_.size(); i++) {
       StepTonePct step_tone_pct;
       for (uint8_t j = 0; j < raw_data.tone_pct_initiator_[i].size(); j++) {
@@ -225,6 +265,70 @@ class RangingHalAndroid : public RangingHal {
       step_tone_pct.toneQualityIndicator = raw_data.tone_quality_indicator_reflector_[i];
       hal_raw_data.reflectorData.stepTonePcts.value().emplace_back(step_tone_pct);
     }
+    for (auto frequencyCompensation:raw_data.frequency_compensation_) {
+      frequencyCompensation_.push_back(frequencyCompensation);
+    }
+    for (auto measuredFreqOffset:raw_data.measured_freq_offset_) {
+      measuredFreqOffset_.push_back(measuredFreqOffset);
+    }
+    for (auto packetQuality:raw_data.init_packet_quality_) {
+      initpacketQuality_.push_back(packetQuality);
+    }
+    for (auto packetRssiDbm:raw_data.init_packet_rssi_) {
+      initpacketRssiDbm_.push_back(packetRssiDbm);
+    }
+    for (auto packetQuality:raw_data.refl_packet_quality_) {
+      reflpacketQuality_.push_back(packetQuality);
+    }
+    for (auto packetRssiDbm:raw_data.refl_packet_rssi_) {
+      reflpacketRssiDbm_.push_back(packetRssiDbm);
+    }
+    for (auto todToaReflector:raw_data.refl_packet_toa_tod_) {
+      todToaReflector_.push_back(todToaReflector);
+    }
+    for (auto toaTodInitiator:raw_data.init_packet_toa_tod_) {
+      toaTodInitiator_.push_back(toaTodInitiator);
+    }
+
+    for (auto mode : raw_data.step_mode_) {
+      enum ModeType type;
+      switch (mode) {
+        case 0:
+      type = ModeType::ZERO;
+      break;
+    case 1:
+      type = ModeType::ONE;
+      break;
+    case 2:
+      type = ModeType::TWO;
+      break;
+    case 3:
+      type = ModeType::THREE;
+      break;
+      }
+      hal_raw_data.stepMode.push_back(type);
+    }
+
+    hal_raw_data.frequencyCompensation = frequencyCompensation_;
+    hal_raw_data.initiatorData.measuredFreqOffset= measuredFreqOffset_;
+    hal_raw_data.initiatorData.packetRssiDbm = initpacketRssiDbm_;
+    hal_raw_data.initiatorData.packetQuality = initpacketQuality_;
+    hal_raw_data.reflectorData.packetRssiDbm = reflpacketRssiDbm_;
+    hal_raw_data.reflectorData.packetQuality = reflpacketQuality_;
+    hal_raw_data.toaTodInitiator = toaTodInitiator_;
+    hal_raw_data.todToaReflector = todToaReflector_;
+
+    log::debug("frequencyCompensation:{} StepMode:{} packetRssiDbm:{}, packetQuality:{}, \
+            measuredFreqOffset:{} AntennaPermutationIndex : {} \
+        toaTodInitiator:{} todToaReflector:{}",
+        (uint16_t)hal_raw_data.frequencyCompensation.size(),
+            (uint16_t)hal_raw_data.stepMode.size(),
+            (uint16_t)hal_raw_data.initiatorData.packetRssiDbm->size(),
+            (uint16_t)hal_raw_data.initiatorData.packetQuality->size(),
+            (uint16_t)hal_raw_data.initiatorData.measuredFreqOffset->size(),
+            (uint16_t)hal_raw_data.initiatorData.vendorSpecificCsSingleSidedata->size(),
+            (uint16_t)hal_raw_data.toaTodInitiator->size(),
+            (uint16_t)hal_raw_data.todToaReflector->size());
     session_trackers_[connection_handle]->GetSession()->writeRawData(hal_raw_data);
   };
 

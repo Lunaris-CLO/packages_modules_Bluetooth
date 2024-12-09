@@ -12,19 +12,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 package com.android.bluetooth.channelsoundingtestapp;
 
 import android.app.Application;
-
+import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-
 import com.android.bluetooth.channelsoundingtestapp.DistanceMeasurementInitiator.BtDistanceMeasurementCallback;
-
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 /** ViewModel for the Initiator. */
@@ -32,9 +37,8 @@ public class InitiatorViewModel extends AndroidViewModel {
 
     private final MutableLiveData<String> mLogText = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mCsStarted = new MutableLiveData<>(false);
-    private final MutableLiveData<List<String>> mBondedBtDeviceAddresses = new MutableLiveData<>();
+
     private final MutableLiveData<Double> mDistanceResult = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> mGattConnected = new MutableLiveData<>(false);
 
     private final DistanceMeasurementInitiator
             mDistanceMeasurementInitiator; // mDistanceMeasurementInitiator;
@@ -51,52 +55,54 @@ public class InitiatorViewModel extends AndroidViewModel {
                         });
     }
 
-    LiveData<String> getLogText() {
-        return mLogText;
+    void setTargetDevice(BluetoothDevice targetDevice) {
+        mDistanceMeasurementInitiator.setTargetDevice(targetDevice);
     }
 
-    LiveData<Boolean> getGattConnected() {
-        return mGattConnected;
+    LiveData<String> getLogText() {
+        return mLogText;
     }
 
     LiveData<Boolean> getCsStarted() {
         return mCsStarted;
     }
 
-    LiveData<List<String>> getBondedBtDeviceAddresses() {
-        return mBondedBtDeviceAddresses;
-    }
-
     LiveData<Double> getDistanceResult() {
         return mDistanceResult;
-    }
-
-    void setCsTargetAddress(String btAddress) {
-        mDistanceMeasurementInitiator.setTargetBtAddress(btAddress);
-    }
-
-    void updateBondedDevices() {
-        mBondedBtDeviceAddresses.setValue(mDistanceMeasurementInitiator.updatePairedDevice());
-    }
-
-    void toggleGattConnection() {
-        if (!mGattConnected.getValue()) {
-            mDistanceMeasurementInitiator.connectGatt();
-        } else {
-            mDistanceMeasurementInitiator.disconnectGatt();
-        }
     }
 
     List<String> getSupportedDmMethods() {
         return mDistanceMeasurementInitiator.getDistanceMeasurementMethods();
     }
 
-    void toggleCsStartStop(String distanceMeasurementMethodName) {
-        if (!mCsStarted.getValue()) {
-            mDistanceMeasurementInitiator.startDistanceMeasurement(distanceMeasurementMethodName);
-        } else {
-            mDistanceMeasurementInitiator.stopDistanceMeasurement();
+    public class FileAppender {
+      public static void appendToFile(Context context, String filename, String data) {
+        FileOutputStream fos = null;
+        try {
+          fos = context.openFileOutput(filename, Context.MODE_APPEND);
+          fos.write(data.getBytes());
+        } catch (IOException e) {
+          e.printStackTrace();
+        } finally {
+          if (fos != null) {
+            try {
+              fos.close();
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
+          }
         }
+      }
+    }
+
+    void toggleCsStartStop(
+        String distanceMeasurementMethodName, String security_mode, String freq, String duration) {
+      if (!mCsStarted.getValue()) {
+        mDistanceMeasurementInitiator.startDistanceMeasurement(
+            distanceMeasurementMethodName, security_mode, freq, duration);
+      } else {
+        mDistanceMeasurementInitiator.stopDistanceMeasurement();
+      }
     }
 
     private BtDistanceMeasurementCallback mBtDistanceMeasurementCallback =
@@ -117,16 +123,6 @@ public class InitiatorViewModel extends AndroidViewModel {
                 @Override
                 public void onDistanceResult(double distanceMeters) {
                     mDistanceResult.postValue(distanceMeters);
-                }
-
-                @Override
-                public void onGattConnected() {
-                    mGattConnected.postValue(true);
-                }
-
-                @Override
-                public void onGattDisconnected() {
-                    mGattConnected.postValue(false);
                 }
             };
 }

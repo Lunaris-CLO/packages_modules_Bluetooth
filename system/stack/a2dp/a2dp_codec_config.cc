@@ -42,6 +42,8 @@
 #include "internal_include/bt_trace.h"
 #include "osi/include/properties.h"
 #include "stack/include/bt_hdr.h"
+#include "stack/include/btm_client_interface.h"
+#include "stack/include/btm_vendor_types.h"
 
 /* The Media Type offset within the codec info byte array */
 #define A2DP_MEDIA_TYPE_OFFSET 1
@@ -659,6 +661,19 @@ bool A2dpCodecs::init() {
     if (codec_index == BTAV_A2DP_CODEC_INDEX_SOURCE_OPUS && !opus_enabled) {
       codec_priority = BTAV_A2DP_CODEC_PRIORITY_DISABLED;
       log::info("OPUS codec disabled, updated priority to {}", codec_priority);
+    }
+
+    if(codec_index == BTAV_A2DP_CODEC_INDEX_SOURCE_LDAC) {
+      log::verbose("codec_index is BTAV_A2DP_CODEC_INDEX_SOURCE_LDAC");
+      uint8_t soc_add_on_features_len = 0;
+      const bt_device_soc_add_on_features_t* soc_add_on_features =
+        get_btm_client_interface().vendor.BTM_GetSocAddOnFeatures(&soc_add_on_features_len);
+      bool ldac_supported = BTM_SPLIT_A2DP_SOURCE_LDAC_SUPPORTED(soc_add_on_features->as_array);
+      log::verbose("ldac_supported is = {}", ldac_supported);
+      if(!ldac_supported) {
+        codec_priority = BTAV_A2DP_CODEC_PRIORITY_DISABLED;
+        log::info("LDAC not supported, updated priority to {}", codec_priority);
+      }
     }
 
     A2dpCodecConfig* codec_config =
@@ -1687,7 +1702,7 @@ bool A2DP_Get_Source_Aptx_Adaptive_SplitTx_Supported() {
 void A2DP_SetAptxADSupport(
   const std::vector<btav_a2dp_codec_config_t> offload_enabled_codecs_config,
   uint8_t soc_add_on_features_len, bool isSplitTxSupported,
-  bool isSplitA2dpSinkSupported) {
+  bool isSplitA2dpSourceSupported) {
   log::info("");
   char adaptive_value[PROPERTY_VALUE_MAX] = {'\0'};
   osi_property_get("persist.vendor.qcom.bluetooth.aptxadaptiver2_1_support",
@@ -1715,9 +1730,9 @@ void A2DP_SetAptxADSupport(
           btav_a2dp_codec_index_t codec_index = static_cast<btav_a2dp_codec_index_t>(i);
     switch (codec_index) {
       case BTAV_A2DP_CODEC_INDEX_SOURCE_APTX_ADAPTIVE:
-        if (((soc_add_on_features_len == 0) || isSplitA2dpSinkSupported) &&
+        if (((soc_add_on_features_len == 0) || isSplitA2dpSourceSupported) &&
             check_mm_supports_offload_codec (offload_enabled_codecs_config,
-                          codec_index)) {
+                                                                codec_index)) {
           log::debug("Setting aptx_adaptive_offload");
           aptx_adaptive_offload = true;
           aptx_adaptive_sw = false;

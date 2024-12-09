@@ -471,6 +471,7 @@ public class DistanceMeasurementManager {
             int errorAzimuthAngle,
             int altitudeAngle,
             int errorAltitudeAngle,
+            long elapsedRealtimeNanos,
             int method) {
         logd(
                 "onDistanceMeasurementResult "
@@ -479,6 +480,7 @@ public class DistanceMeasurementManager {
                         + centimeter);
         DistanceMeasurementResult result =
                 new DistanceMeasurementResult.Builder(centimeter / 100.0, errorCentimeter / 100.0)
+                        .setMeasurementTimestampNanos(elapsedRealtimeNanos)
                         .build();
         switch (method) {
             case DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI:

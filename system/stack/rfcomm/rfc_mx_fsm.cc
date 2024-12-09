@@ -251,6 +251,14 @@ void rfc_mx_sm_state_wait_conn_cnf(tRFC_MCB* p_mcb, tRFC_MX_EVENT event,
         }
 
         rfc_mx_sm_execute(p_mcb, RFC_MX_EVENT_CONN_IND, nullptr);
+        if (p_mcb->pending_configure_complete) {
+        log::info("Configuration of the pending connection was completed");
+        p_mcb->pending_configure_complete = false;
+        uintptr_t result_as_ptr = L2CAP_CFG_OK;
+        rfc_mx_sm_execute(p_mcb, RFC_MX_EVENT_CONF_IND,
+                          &p_mcb->pending_cfg_info);
+        rfc_mx_sm_execute(p_mcb, RFC_MX_EVENT_CONF_CNF, (void*)result_as_ptr);
+        }
         if (p_mcb->pending_buf != nullptr) {
           RFCOMM_BufDataInd(p_mcb->lcid, p_mcb->pending_buf);
           p_mcb->pending_buf =  nullptr;
@@ -620,6 +628,11 @@ void rfc_on_l2cap_error(uint16_t lcid, uint16_t result) {
         rfc_mx_sm_execute(p_mcb, RFC_MX_EVENT_CONF_IND,
                           &p_mcb->pending_cfg_info);
         rfc_mx_sm_execute(p_mcb, RFC_MX_EVENT_CONF_CNF, (void*)result_as_ptr);
+        if (p_mcb->pending_buf != nullptr) {
+          log::info("send SABM to Statemachine now");
+          RFCOMM_BufDataInd(p_mcb->lcid, p_mcb->pending_buf);
+          p_mcb->pending_buf =  nullptr;
+        }
       }
       return;
     }

@@ -100,5 +100,6 @@ class LeAudioGroupStateMachine {
       uint32_t duplicatePackets) = 0;
   virtual void ProcessHciNotifAclDisconnected(LeAudioDeviceGroup* group,
                                               LeAudioDevice* leAudioDevice) = 0;
+  virtual void RemoveCigForGroup(LeAudioDeviceGroup* group) = 0;
 };
 }  // namespace bluetooth::le_audio

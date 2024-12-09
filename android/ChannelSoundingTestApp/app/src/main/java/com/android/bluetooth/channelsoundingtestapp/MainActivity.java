@@ -12,14 +12,18 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 package com.android.bluetooth.channelsoundingtestapp;
 
-import android.Manifest;
+import android.Manifest.permission;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-
+import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -27,40 +31,64 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
-
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+  private static final String LOG_TAG = "MainActivity";
+  private static final int REQUEST_CODE_PERMISSIONS = 100;
+  private AppBarConfiguration appBarConfiguration;
 
-    private static final int REQUEST_CODE_PERMISSIONS = 100;
-    private AppBarConfiguration appBarConfiguration;
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    String filename = "myfile.txt";
+    String fileContents = "Distances : ";
+    FileOutputStream fos = null;
 
-        setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+    try {
+      fos = openFileOutput(filename, MODE_PRIVATE);
+      fos.write(fileContents.getBytes());
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      if (fos != null) {
+        try {
+          fos.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
 
-        NavController navController =
-                Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+    setContentView(R.layout.activity_main);
+    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+    setSupportActionBar(toolbar);
 
-        requestBtPermissions();
+    NavController navController =
+        Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+    appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
+    NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+
+    requestBtPermissions();
     }
 
     private void requestBtPermissions() {
         String[] requiredPermissions =
                 new String[] {
-                    android.Manifest.permission.BLUETOOTH_ADVERTISE,
-                    android.Manifest.permission.BLUETOOTH_CONNECT,
+                    permission.ACCESS_COARSE_LOCATION,
+                    permission.ACCESS_FINE_LOCATION,
+                    permission.BLUETOOTH_ADVERTISE,
+                    permission.BLUETOOTH_CONNECT,
+                    permission.BLUETOOTH_SCAN,
                 };
         List<String> permissionsToRequest = new ArrayList<>();
+
         for (String permission : requiredPermissions) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+            if (ActivityCompat.checkSelfPermission(this, permission)
                     != PackageManager.PERMISSION_GRANTED) {
                 permissionsToRequest.add(permission);
             }
