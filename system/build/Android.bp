@@ -26,3 +26,24 @@ cc_defaults {
         },
     },
 }
+
+soong_config_module_type {
+    name: "qssi_bluetooth_cc_defaults",
+    module_type: "cc_defaults",
+    config_namespace: "qssi_bluetooth",
+    bool_variables: [
+        "enable_delay_in_ms",
+    ],
+    properties: [
+        "cflags",
+    ],
+}
+
+qssi_bluetooth_cc_defaults {
+    name: "qssi_bluetooth_defaults",
+    soong_config_variables: {
+        enable_delay_in_ms: {
+            cflags: ["-DENABLE_DELAY_IN_MS"],
+        },
+    },
+}
