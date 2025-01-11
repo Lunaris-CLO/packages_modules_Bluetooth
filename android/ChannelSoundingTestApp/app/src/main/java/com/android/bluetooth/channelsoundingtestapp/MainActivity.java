@@ -45,8 +45,11 @@ public class MainActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    String filename = "myfile.txt";
-    String fileContents = "Distances : ";
+    String filename = "myfile.csv";
+    String fileContents = "Distances"
+        + ","
+        + "TimeStamp"
+        + "\n";
     FileOutputStream fos = null;
 
     try {

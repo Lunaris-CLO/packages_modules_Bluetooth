@@ -225,6 +225,7 @@ cc_test {
         "libbinder_ndk",
         "libcrypto",
         "server_configurable_flags",
+        "libxml2",
     ],
     sanitize: {
         address: true,
@@ -308,6 +309,7 @@ cc_test {
         "libaconfig_storage_read_api_cc",
         "libcrypto",
         "server_configurable_flags",
+        "libxml2",
     ],
     target: {
         linux: {

@@ -47,7 +47,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 class DistanceMeasurementInitiator {
-
     private static final int DISTANCE_MEASUREMENT_DURATION_SEC = 3600;
     private int mode_int = 0;
     private int duration_int = 0;

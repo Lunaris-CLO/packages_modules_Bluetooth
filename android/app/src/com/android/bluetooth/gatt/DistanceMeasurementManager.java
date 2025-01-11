@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.bluetooth.gatt;
 
 import android.bluetooth.BluetoothDevice;
@@ -113,7 +119,7 @@ public class DistanceMeasurementManager {
         }
 
         DistanceMeasurementTracker tracker =
-                new DistanceMeasurementTracker(this, params, address, uuid, interval, callback);
+                new DistanceMeasurementTracker(this, params, address, uuid, interval, params.getFrequency(), callback);
 
         switch (params.getMethodId()) {
             case DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_AUTO:
@@ -159,6 +165,22 @@ public class DistanceMeasurementManager {
             Log.w(TAG, "Already registered");
             return;
         }
+	ChannelSoundingParams params = tracker.getChannelSoundingParams();
+	Log.i(TAG,
+                "startCsTracker device:"
+                        + tracker.mIdentityAddress
+                        + ", mSightType: "
+                        + params.getSightType()
+                        + " mLocationType "
+                        + params.getLocationType()
+			+ "mCsSecurityLevel"
+			+ params.getCsSecurityLevel()
+			+ "mFrequency" + tracker.mFrequency);
+	mDistanceMeasurementNativeInterface.setCsParams(tracker.mIdentityAddress,
+			params.getSightType(),
+			params.getLocationType(),
+			params.getCsSecurityLevel(),
+			tracker.mFrequency,tracker.mInterval);
         mDistanceMeasurementNativeInterface.startDistanceMeasurement(
                 tracker.mIdentityAddress,
                 tracker.mInterval,

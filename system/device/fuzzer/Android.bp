@@ -39,6 +39,7 @@ cc_fuzz {
         "libdl",
         "liblog",
         "server_configurable_flags",
+        "libxml2"
     ],
     generated_headers: [
         "BluetoothGeneratedDumpsysDataSchema_h",

@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 #include "distance_measurement_manager.h"
 
 #include "bta/include/bta_ras_api.h"
@@ -64,6 +70,13 @@ public:
 
   void RegisterDistanceMeasurementCallbacks(::DistanceMeasurementCallbacks* callbacks) {
     distance_measurement_callbacks_ = callbacks;
+  }
+
+  void SetCsParams(RawAddress raw_address, int SightType, int LocationType,
+                   int CsSecurityLevel, int Frequency, int Duration){
+    bluetooth::shim::GetDistanceMeasurementManager()->SetCsParams(
+        bluetooth::ToGdAddress(raw_address), SightType, LocationType,
+	CsSecurityLevel, Frequency, Duration);
   }
 
   void StartDistanceMeasurement(RawAddress identity_addr, uint16_t interval, uint8_t method) {

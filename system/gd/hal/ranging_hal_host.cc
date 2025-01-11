@@ -46,6 +46,8 @@ class RangingHalHost : public RangingHal {
   void WriteRawData(
       uint16_t /* connection_handle */, const ChannelSoundingRawData& /* raw_data */) override{};
 
+  void close(uint16_t connection_handle) override{};
+
  protected:
   void ListDependencies(ModuleList* /*list*/) const {}
 

@@ -16,6 +16,12 @@
  *
  ******************************************************************************/
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 #define LOG_TAG "bt_stack_manager"
 
 #include <bluetooth/log.h>
@@ -65,6 +71,7 @@
 #include "rust/src/core/ffi/module.h"
 #include "stack/btm/btm_ble_int.h"
 #include "stack/include/smp_api.h"
+#include "device/include/csconfig.h"
 
 #ifndef BT_STACK_CLEANUP_WAIT_MS
 #define BT_STACK_CLEANUP_WAIT_MS 1000
@@ -210,6 +217,7 @@ extern const module_t osi_module;
 extern const module_t rust_module;
 extern const module_t stack_config_module;
 extern const module_t device_iot_config_module;
+extern const module_t cs_config_module;
 
 struct module_lookup {
   const char* name;
@@ -224,6 +232,7 @@ const struct module_lookup module_table[] = {
     {RUST_MODULE, &rust_module},
     {STACK_CONFIG_MODULE, &stack_config_module},
     {DEVICE_IOT_CONFIG_MODULE, &device_iot_config_module},
+    {CS_CONFIG_MODULE, &cs_config_module},
     {NULL, NULL},
 };
 
@@ -337,6 +346,7 @@ static void event_start_up_stack(bluetooth::core::CoreInterface* interface,
   if (com::android::bluetooth::flags::channel_sounding_in_stack()) {
     bluetooth::ras::GetRasServer()->Initialize();
     bluetooth::ras::GetRasClient()->Initialize();
+    module_init(get_local_module(CS_CONFIG_MODULE));
   }
 
   stack_is_running = true;
@@ -435,6 +445,10 @@ static void event_clean_up_stack(std::promise<void> promise,
   module_clean_up(get_local_module(OSI_MODULE));
   log::info("Gd shim module disabled");
   module_shut_down(get_local_module(GD_SHIM_MODULE));
+
+  if (com::android::bluetooth::flags::channel_sounding_in_stack()) {
+    module_clean_up(get_local_module(CS_CONFIG_MODULE));
+  }
 
   module_management_stop();
   log::info("finished");

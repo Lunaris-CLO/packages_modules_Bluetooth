@@ -365,6 +365,8 @@ typedef enum {
 
   INTEROP_A2DP_DELAY_SNIFF_SUBRATING,
 
+  INTEROP_DISABLE_OUTGOING_BR_SMP,
+
   END_OF_INTEROP_LIST
 } interop_feature_t;
 

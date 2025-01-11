@@ -2380,9 +2380,9 @@ static void startAdvertisingSetNative(
 
 static void stopAdvertisingSetNative(JNIEnv* /* env */, jobject /* object */,
                                      jint advertiser_id) {
-  if (!sGattIf) return;
-
   bluetooth::gatt::clear_advertiser(advertiser_id);
+
+  if (!sGattIf) return;
 
   sGattIf->advertiser->Unregister(advertiser_id);
 }
@@ -2644,6 +2644,14 @@ static void distanceMeasurementCleanupNative(JNIEnv* env,
   }
 }
 
+void setCsParamsNative(JNIEnv* env, jobject /* object */,
+		     jstring address, jint mSightType, jint mLocationType,
+		     jint mCsSecurityLevel,
+		     jint mFrequency, jint mDuration) {
+  if (!sGattIf) return;
+  sGattIf->distance_measurement_manager->SetCsParams(
+	 str2addr(env, address), mSightType, mLocationType, mCsSecurityLevel, mFrequency, mDuration);
+}
 static void startDistanceMeasurementNative(JNIEnv* env, jobject /* object */,
                                            jstring address, jint interval,
                                            jint method) {
@@ -2830,6 +2838,8 @@ static int register_com_android_bluetooth_gatt_distance_measurement(
   const JNINativeMethod methods[] = {
       {"initializeNative", "()V", (void*)distanceMeasurementInitializeNative},
       {"cleanupNative", "()V", (void*)distanceMeasurementCleanupNative},
+       {"setCsParamsNative", "(Ljava/lang/String;IIIII)V",
+       (void*)setCsParamsNative},
       {"startDistanceMeasurementNative", "(Ljava/lang/String;II)V",
        (void*)startDistanceMeasurementNative},
       {"stopDistanceMeasurementNative", "(Ljava/lang/String;I)V",

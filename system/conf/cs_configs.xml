@@ -1,0 +1,129 @@
+<!--
+/*
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+ -->
+
+<CsConfigurationList>
+<CsConfig>
+     <CsConfigSetting>
+        <ConfigId>1</ConfigId>
+        <MainModeType>2</MainModeType>
+        <SubModeType>255</SubModeType>
+        <MainModeMinSteps>2</MainModeMinSteps>
+        <MainModeMaxSteps>6</MainModeMaxSteps>
+        <MainModeRepetition>2</MainModeRepetition>
+        <Mode0Steps>2</Mode0Steps>
+        <Role>0</Role>
+        <RTTTypes>0</RTTTypes>
+        <CsSyncPhy>1</CsSyncPhy>
+        <ChannelMap>252 255 127 252 255 255 255 255 255 31</ChannelMap>
+        <ChannelMapRepetition>1</ChannelMapRepetition>
+        <ChannelSelectionType>0</ChannelSelectionType>
+        <ChannelShape>0</ChannelShape>
+        <ChannelJump>2</ChannelJump>
+        <CompanionSignalEnable>0</CompanionSignalEnable>
+    </CsConfigSetting>
+    <CsConfigSetting>
+        <ConfigId>2</ConfigId>
+        <MainModeType>2</MainModeType>
+        <SubModeType>1</SubModeType>
+        <MainModeMinSteps>6</MainModeMinSteps>
+        <MainModeMaxSteps>10</MainModeMaxSteps>
+        <MainModeRepetition>2</MainModeRepetition>
+        <Mode0Steps>2</Mode0Steps>
+        <Role>0</Role>
+        <RTTTypes>0</RTTTypes>
+        <CsSyncPhy>2</CsSyncPhy>
+        <ChannelMap>252 255 127 252 255 255 255 255 255 31</ChannelMap>
+        <ChannelMapRepetition>1</ChannelMapRepetition>
+        <ChannelSelectionType>0</ChannelSelectionType>
+        <ChannelShape>0</ChannelShape>
+        <ChannelJump>2</ChannelJump>
+        <CompanionSignalEnable>0</CompanionSignalEnable>
+    </CsConfigSetting>
+    <CsConfigSetting>
+        <ConfigId>3</ConfigId>
+        <MainModeType>2</MainModeType>
+        <SubModeType>1</SubModeType>
+        <MainModeMinSteps>2</MainModeMinSteps>
+        <MainModeMaxSteps>4</MainModeMaxSteps>
+        <MainModeRepetition>2</MainModeRepetition>
+        <Mode0Steps>2</Mode0Steps>
+        <Role>0</Role>
+        <RTTTypes>2</RTTTypes>
+        <CsSyncPhy>1</CsSyncPhy>
+        <ChannelMap>252 255 127 252 255 255 255 255 255 31</ChannelMap>
+        <ChannelMapRepetition>1</ChannelMapRepetition>
+        <ChannelSelectionType>0</ChannelSelectionType>
+        <ChannelShape>0</ChannelShape>
+        <ChannelJump>2</ChannelJump>
+        <CompanionSignalEnable>0</CompanionSignalEnable>
+    </CsConfigSetting>
+    <CsConfigSetting>
+        <ConfigId>4</ConfigId>
+        <MainModeType>3</MainModeType>
+        <SubModeType>255</SubModeType>
+        <MainModeMinSteps>2</MainModeMinSteps>
+        <MainModeMaxSteps>6</MainModeMaxSteps>
+        <MainModeRepetition>2</MainModeRepetition>
+        <Mode0Steps>2</Mode0Steps>
+        <Role>0</Role>
+        <RTTTypes>4</RTTTypes>
+        <CsSyncPhy>1</CsSyncPhy>
+        <ChannelMap>252 255 127 252 255 255 255 255 255 31</ChannelMap>
+        <ChannelMapRepetition>1</ChannelMapRepetition>
+        <ChannelSelectionType>0</ChannelSelectionType>
+        <ChannelShape>0</ChannelShape>
+        <ChannelJump>2</ChannelJump>
+        <CompanionSignalEnable>0</CompanionSignalEnable>
+    </CsConfigSetting>
+</CsConfig>
+
+<CsProcedure>
+    <CsProcedureSettings>
+        <MaxProcedureDuration>1600</MaxProcedureDuration>
+        <MinPeriodBetweenProcedures>0</MinPeriodBetweenProcedures>
+        <MaxPeriodBetweenProcedures>150</MaxPeriodBetweenProcedures>
+        <MaxProcedureCount>0</MaxProcedureCount>
+        <MinSubEventLen>00 50 00</MinSubEventLen>
+        <MaxSubEventLen>03 50 00</MaxSubEventLen>
+        <ToneAntennaConfigSelection>0</ToneAntennaConfigSelection>
+        <Phy>1</Phy>
+        <TxPowerDelta>0</TxPowerDelta>
+        <PreferredPeerAntenna>1 0 0 0</PreferredPeerAntenna>
+        <SnrControlInitiator>255</SnrControlInitiator>
+        <SnrControlReflector>255</SnrControlReflector>
+    </CsProcedureSettings>
+    <CsProcedureSettings>
+        <MaxProcedureDuration>800</MaxProcedureDuration>
+        <MinPeriodBetweenProcedures>0</MinPeriodBetweenProcedures>
+        <MaxPeriodBetweenProcedures>150</MaxPeriodBetweenProcedures>
+        <MaxProcedureCount>0</MaxProcedureCount>
+        <MinSubEventLen>00 50 00</MinSubEventLen>
+        <MaxSubEventLen>03 50 00</MaxSubEventLen>
+        <ToneAntennaConfigSelection>0</ToneAntennaConfigSelection>
+        <Phy>1</Phy>
+        <TxPowerDelta>0</TxPowerDelta>
+        <PreferredPeerAntenna>1 0 0 0</PreferredPeerAntenna>
+        <SnrControlInitiator>255</SnrControlInitiator>
+        <SnrControlReflector>255</SnrControlReflector>
+    </CsProcedureSettings>
+    <CsProcedureSettings>
+        <MaxProcedureDuration>480</MaxProcedureDuration>
+        <MinPeriodBetweenProcedures>0</MinPeriodBetweenProcedures>
+        <MaxPeriodBetweenProcedures>150</MaxPeriodBetweenProcedures>
+        <MaxProcedureCount>0</MaxProcedureCount>
+        <MinSubEventLen>00 50 00</MinSubEventLen>
+        <MaxSubEventLen>03 50 00</MaxSubEventLen>
+        <ToneAntennaConfigSelection>7</ToneAntennaConfigSelection>
+        <Phy>1</Phy>
+        <TxPowerDelta>0</TxPowerDelta>
+        <PreferredPeerAntenna>1 1 0 0</PreferredPeerAntenna>
+        <SnrControlInitiator>255</SnrControlInitiator>
+        <SnrControlReflector>255</SnrControlReflector>
+    </CsProcedureSettings>
+</CsProcedure>
+</CsConfigurationList>
+

@@ -137,6 +137,7 @@ cc_binary {
         "liblog", // __android_log_print
         "libutils",
         "server_configurable_flags",
+        "libxml2",
     ],
     header_libs: ["libbluetooth_headers"],
     target: {

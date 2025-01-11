@@ -677,7 +677,8 @@ class ClassicShimAclConnection
     TRY_POSTING_ON_MAIN(interface_.on_read_remote_version_information_complete,
                         ToLegacyHciErrorCode(hci_status), handle_, lmp_version,
                         manufacturer_name, sub_version);
-    connection_->ReadRemoteSupportedFeatures();
+    if (connection_)
+      connection_->ReadRemoteSupportedFeatures();
   }
 
   void OnReadRemoteSupportedFeaturesComplete(uint64_t features) override {

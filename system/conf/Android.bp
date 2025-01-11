@@ -27,3 +27,10 @@ prebuilt_etc {
     src: "interop_database.conf",
     sub_dir: "bluetooth",
 }
+
+// Bluetooth csconfig file
+prebuilt_etc {
+    name: "cs_configs.xml",
+    src: "cs_configs.xml",
+    sub_dir: "bluetooth",
+}

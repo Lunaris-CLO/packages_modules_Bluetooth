@@ -302,6 +302,7 @@ cc_test {
         "liblog",
         "libutils",
         "server_configurable_flags",
+        "libxml2",
     ],
     static_libs: [
         "android.hardware.audio.common@5.0",
@@ -614,6 +615,7 @@ cc_test {
         "liblog",
         "libutils",
         "server_configurable_flags",
+        "libxml2",
     ],
     static_libs: [
         "android.hardware.audio.common@5.0",
@@ -737,6 +739,7 @@ cc_test {
         "liblog",
         "libutils",
         "server_configurable_flags",
+        "libxml2",
     ],
     static_libs: [
         "android.hardware.audio.common@5.0",

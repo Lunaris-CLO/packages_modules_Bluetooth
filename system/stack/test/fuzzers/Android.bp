@@ -85,5 +85,6 @@ cc_defaults {
         "libstatssocket",
         "libutils",
         "server_configurable_flags",
+        "libxml2",
     ],
 }

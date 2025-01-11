@@ -132,6 +132,7 @@ struct RoleChangeView {
 namespace {
 StackAclBtmAcl internal_;
 std::unique_ptr<RoleChangeView> delayed_role_change_ = nullptr;
+std::set<struct acl_client_callback_s*> acl_client_callbacks_;
 }
 
 typedef struct {
@@ -494,6 +495,9 @@ void btm_acl_removed(uint16_t handle) {
   }
   p_acl->in_use = false;
   NotifyAclLinkDown(*p_acl);
+  for (const auto& cb : acl_client_callbacks_) {
+    cb->on_acl_link_down(p_acl->remote_addr, p_acl->transport);
+  }
   if (p_acl->is_transport_br_edr()) {
     BTM_PM_OnDisconnected(handle);
   }
@@ -2712,12 +2716,20 @@ void acl_process_extended_features(uint16_t handle, uint8_t current_page_number,
   }
 }
 
-void ACL_RegisterClient(struct acl_client_callback_s* /* callbacks */) {
-  log::debug("UNIMPLEMENTED");
+void ACL_RegisterClient(struct acl_client_callback_s* callbacks) {
+  if (!callbacks) {
+    log::warn("callbacks is null");
+    return;
+  }
+  acl_client_callbacks_.insert(callbacks);
 }
 
-void ACL_UnregisterClient(struct acl_client_callback_s* /* callbacks */) {
-  log::debug("UNIMPLEMENTED");
+void ACL_UnregisterClient(struct acl_client_callback_s* callbacks) {
+  if (!callbacks) {
+    log::warn("callbacks is null");
+    return;
+  }
+  acl_client_callbacks_.erase(callbacks);
 }
 
 tACL_CONN* btm_acl_for_bda(const RawAddress& bd_addr, tBT_TRANSPORT transport) {

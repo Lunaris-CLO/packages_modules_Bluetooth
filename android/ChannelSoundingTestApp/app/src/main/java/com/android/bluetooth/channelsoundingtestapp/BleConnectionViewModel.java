@@ -105,37 +105,44 @@ public class BleConnectionViewModel extends AndroidViewModel {
         }
     }
 
-    AdvertisingSetCallback mAdvertisingSetCallback =
-            new AdvertisingSetCallback() {
-                @Override
-                public void onAdvertisingSetStarted(
-                        AdvertisingSet advertisingSet, int txPower, int status) {
-                    printLog(
-                            "onAdvertisingSetStarted(): txPower:"
-                                    + txPower
-                                    + " , status: "
-                                    + status);
-                    if (status == 0) {
-                        mIsAdvertising.postValue(true);
-                    }
-                }
+    AdvertisingSetCallback mAdvertisingSetCallback = new AdvertisingSetCallback() {
+      @Override
+      public void onAdvertisingSetStarted(AdvertisingSet advertisingSet, int txPower, int status) {
+        printLog("onAdvertisingSetStarted(): txPower:" + txPower + " , status: " + status);
+        if (status == 0) {
+          mIsAdvertising.postValue(true);
+        }
+      }
 
-                @Override
-                public void onAdvertisingDataSet(AdvertisingSet advertisingSet, int status) {
-                    printLog("onAdvertisingDataSet() :status:" + status);
-                }
+      @Override
+      public void onAdvertisingDataSet(AdvertisingSet advertisingSet, int status) {
+        printLog("onAdvertisingDataSet() :status:" + status);
+      }
 
-                @Override
-                public void onScanResponseDataSet(AdvertisingSet advertisingSet, int status) {
-                    printLog("onScanResponseDataSet(): status:" + status);
-                }
+      @Override
+      public void onScanResponseDataSet(AdvertisingSet advertisingSet, int status) {
+        printLog("onScanResponseDataSet(): status:" + status);
+      }
 
-                @Override
-                public void onAdvertisingSetStopped(AdvertisingSet advertisingSet) {
-                    printLog("onAdvertisingSetStopped():");
-                    mIsAdvertising.postValue(false);
-                }
-            };
+      @Override
+      public void onAdvertisingSetStopped(AdvertisingSet advertisingSet) {
+        printLog("onAdvertisingSetStopped():");
+        mIsAdvertising.postValue(false);
+      }
+    };
+    public void updateconnectioninterval(String conn_priority) {
+      switch (conn_priority) {
+        case "Balanced":
+          mBluetoothGatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_BALANCED);
+          break;
+        case "High Priority":
+          mBluetoothGatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
+          break;
+        case "Low Power":
+          mBluetoothGatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_LOW_POWER);
+          break;
+      }
+    }
 
     private void startConnectableAdvertising() {
         if (mIsAdvertising.getValue()) {
@@ -211,6 +218,13 @@ public class BleConnectionViewModel extends AndroidViewModel {
         } else if (mGattState.getValue() == GattState.CONNECTED_DIRECT) {
             disconnectGatt();
         }
+    }
+
+    public boolean isconnected() {
+        if(mGattState.getValue() == GattState.DISCONNECTED)
+            return false;
+        else
+            return true;
     }
 
     private BluetoothGattCallback mGattCallback =

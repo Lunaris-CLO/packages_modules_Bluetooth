@@ -14,11 +14,22 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.bluetooth.gatt;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.DistanceMeasurementParams;
 import android.bluetooth.le.IDistanceMeasurementCallback;
+import android.bluetooth.le.ChannelSoundingParams;
+import android.annotation.FlaggedApi;
+import android.annotation.NonNull;
+import android.annotation.Nullable;
+import android.annotation.SystemApi;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -36,16 +47,18 @@ class DistanceMeasurementTracker {
     final int mInterval; // Report interval in ms
     final int mDuration; // Report duration in s
     final int mMethod;
+    final int mFrequency;
     final IDistanceMeasurementCallback mCallback;
     boolean mStarted = false;
     private Handler mHandler;
+    private ChannelSoundingParams mChannelSoundingParams = null;
 
     DistanceMeasurementTracker(
             DistanceMeasurementManager manager,
             DistanceMeasurementParams params,
             String identityAddress,
             UUID uuid,
-            int interval,
+            int interval, int Frequency,
             IDistanceMeasurementCallback callback) {
         mManager = manager;
         mDevice = params.getDevice();
@@ -55,6 +68,8 @@ class DistanceMeasurementTracker {
         mDuration = params.getDurationSeconds();
         mMethod = params.getMethodId();
         mCallback = callback;
+        mFrequency = Frequency;
+	mChannelSoundingParams = params.getChannelSoundingParams();
     }
 
     void startTimer(Looper looper) {
@@ -106,5 +121,9 @@ class DistanceMeasurementTracker {
     @Override
     public int hashCode() {
         return Objects.hash(mIdentityAddress, mUuid);
+    }
+    @SystemApi
+    public @Nullable ChannelSoundingParams getChannelSoundingParams() {
+        return mChannelSoundingParams;
     }
 }

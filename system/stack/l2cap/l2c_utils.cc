@@ -58,7 +58,6 @@
 #include "stack/include/l2cdefs.h"
 #include "stack/l2cap/l2c_int.h"
 #include "types/raw_address.h"
-#include "osi/include/properties.h"
 
 using namespace bluetooth;
 
@@ -2755,10 +2754,6 @@ bool l2cu_initialize_fixed_ccb(tL2C_LCB* p_lcb, uint16_t fixed_cid) {
 void l2cu_no_dynamic_ccbs(tL2C_LCB* p_lcb) {
   tBTM_STATUS rc;
   uint64_t timeout_ms = p_lcb->idle_timeout * 1000;
-  bool pts_hid_vup_enabled =
-  osi_property_get_bool("persist.vendor.bluetooth.pts_hid_vup_enabled", false);
-  if (pts_hid_vup_enabled)
-    timeout_ms = 1000;
   bool start_timeout = true;
 
   int xx;

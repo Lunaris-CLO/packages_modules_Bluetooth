@@ -25,6 +25,7 @@ cc_library_static {
         "src/device_iot_config_int.cc",
         "src/esco_parameters.cc",
         "src/interop.cc",
+        "src/csconfig.cc"
     ],
     apex_available: [
         "com.android.btservices",
@@ -43,6 +44,7 @@ cc_library_static {
         "libflatbuffers-cpp",
         "server_configurable_flags",
     ],
+   shared_libs: ["libxml2"],
 }
 
 // Bluetooth device unit tests for target

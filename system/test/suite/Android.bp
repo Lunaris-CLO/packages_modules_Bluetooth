@@ -58,6 +58,7 @@ cc_defaults {
         "libstatssocket",
         "libutils",
         "vendor.qti.hardware.bluetooth.audio-V1-ndk",
+        "libxml2",
     ],
     static_libs: [
         "android.hardware.audio.common@5.0",

@@ -46,6 +46,7 @@ apex {
         "btservices-linker-config",
         "interop_database.conf",
 	"privapp_allowlist_com.android.bluetooth.xml",
+        "cs_configs.xml",
     ],
     key: "com.android.btservices.key",
     certificate: ":com.android.btservices.certificate",

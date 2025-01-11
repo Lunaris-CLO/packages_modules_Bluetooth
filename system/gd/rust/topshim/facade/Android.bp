@@ -85,6 +85,7 @@ rust_defaults {
         "libgrpc_wrap",
         "liblog",
         "server_configurable_flags",
+        "libxml2",
     ],
     proc_macros: [
         "libpaste",

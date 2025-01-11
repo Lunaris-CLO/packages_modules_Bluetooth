@@ -1881,7 +1881,27 @@ static void btif_on_service_discovery_results(
           property_value.insert(property_value.end(), uuid_128bit.begin(),
                                 uuid_128bit.end());
         }
+        Uuid existing_uuids[BT_MAX_NUM_UUIDS] = {};
         eir_uuids_cache.erase(uuids_iter);
+
+        // Look up UUIDs using pseudo address (either RPA or static address)
+        bt_status_t existing_lookup_result =
+            btif_get_existing_uuids(&bd_addr, existing_uuids);
+
+        if (existing_lookup_result != BT_STATUS_FAIL) {
+          log::info("Got some existing UUIDs by address {}", bd_addr);
+
+          for (int i = 0; i < BT_MAX_NUM_UUIDS; i++) {
+            Uuid uuid = existing_uuids[i];
+            if (uuid.IsEmpty()) {
+              continue;
+            }
+            auto uuid_128bit = uuid.To128BitBE();
+            property_value.insert(property_value.end(), uuid_128bit.begin(),
+                                  uuid_128bit.end());
+            num_eir_uuids++;
+          }
+        }
       }
       if (num_eir_uuids > 0) {
         prop[0].val = (void*)property_value.data();

@@ -1163,6 +1163,7 @@ void Device::MessageReceived(uint8_t label, std::shared_ptr<Packet> pkt) {
       log::verbose("fast_forwarding_: {}, fast_rewinding_: {}", fast_forwarding_, fast_rewinding_);
       media_interface_->GetPlayStatus(base::Bind(
           [](base::WeakPtr<Device> d, std::shared_ptr<PassThroughPacket> packet, PlayStatus s) {
+            if (!d) return;
             d->PlaybackStatusNotificationResponse(d->play_status_changed_.second, false, s);
             if (d->IsActive()) {
               log::verbose("SendKeyEvent: PT:{}, KEYSTATE:{}", packet->GetOperationId(),

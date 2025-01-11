@@ -30,6 +30,7 @@ import com.android.bluetooth.BluetoothObexTransport;
 import com.android.bluetooth.BluetoothStatsLog;
 import com.android.bluetooth.IObexConnectionHandler;
 import com.android.bluetooth.ObexServerSockets;
+import com.android.bluetooth.Utils;
 import com.android.bluetooth.content_profiles.ContentProfileErrorReportUtils;
 import com.android.bluetooth.map.BluetoothMapContentObserver.Msg;
 import com.android.bluetooth.map.BluetoothMapUtils.TYPE;
@@ -67,6 +68,9 @@ public class BluetoothMapMasInstance implements IObexConnectionHandler {
     static final int SDP_MAP_MAS_FEATURES_1_2 = 0x0000007F;
     static final int SDP_MAP_MAS_FEATURES_1_3 = 0x000603FF;
     static final int SDP_MAP_MAS_FEATURES_1_4 = 0x000603FF;
+
+    // PTS requires Bit 19 = MapSupportedFeatures in Connect Request
+    static final int SDP_MAP_MAS_FEATURES_1_4_PTS = 0x000E03FF;
 
     private ServerSession mServerSession = null;
     // The handle to the socket registration with SDP
@@ -360,7 +364,8 @@ public class BluetoothMapMasInstance implements IObexConnectionHandler {
                 break;
             case "map14":
                 masVersion = SDP_MAP_MAS_VERSION_1_4;
-                sFeatureMask = SDP_MAP_MAS_FEATURES_1_4;
+                sFeatureMask = (Utils.isPtsTestMode() ? SDP_MAP_MAS_FEATURES_1_4_PTS :
+                    SDP_MAP_MAS_FEATURES_1_4);
                 break;
             default:
                 masVersion = SDP_MAP_MAS_VERSION_1_4;

@@ -18,6 +18,7 @@
 #include <cstdint>
 
 #include "stack/acl/acl.h"
+#include "stack/include/btm_client_interface.h"
 #include "stack/btm/security_device_record.h"
 #include "stack/include/btm_api_types.h"
 #include "stack/include/btm_status.h"

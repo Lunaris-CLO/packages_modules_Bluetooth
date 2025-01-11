@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
 #pragma once
 
 #include <complex>
@@ -30,15 +35,23 @@ struct VendorSpecificCharacteristic {
 
 struct ChannelSoundingRawData {
   uint8_t num_antenna_paths_;
+  std::vector<uint16_t> step_mode_;
   std::vector<uint8_t> step_channel_;
+  std::vector<int8_t> init_packet_rssi_;
+  std::vector<int8_t> refl_packet_rssi_;
+  std::vector<int16_t> measured_freq_offset_;
+  std::vector<uint16_t> frequency_compensation_;
   std::vector<std::vector<std::complex<double>>> tone_pct_initiator_;
   std::vector<std::vector<std::complex<double>>> tone_pct_reflector_;
   std::vector<std::vector<uint8_t>> tone_quality_indicator_initiator_;
   std::vector<std::vector<uint8_t>> tone_quality_indicator_reflector_;
-  std::vector<int8_t> packet_quality_initiator;
-  std::vector<int8_t> packet_quality_reflector;
+  std::vector<uint8_t> antenna_permutation_index_initiator_;
+  std::vector<uint8_t> antenna_permutation_index_reflector_;
+  std::vector<int8_t> packet_quality_initiator_;
+  std::vector<int8_t> packet_quality_reflector_;
   std::vector<int16_t> toa_tod_initiators_;
   std::vector<int16_t> tod_toa_reflectors_;
+
 };
 
 struct RangingResult {
@@ -75,6 +88,7 @@ class RangingHal : public ::bluetooth::Module {
       uint16_t connection_handle,
       const std::vector<hal::VendorSpecificCharacteristic>& vendor_specific_reply) = 0;
   virtual void WriteRawData(uint16_t connection_handle, const ChannelSoundingRawData& raw_data) = 0;
+  virtual void close(uint16_t connection_handle) = 0;
 };
 
 }  // namespace hal

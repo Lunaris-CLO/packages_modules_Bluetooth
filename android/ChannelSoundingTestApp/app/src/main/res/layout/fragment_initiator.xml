@@ -23,49 +23,45 @@
 
     <Spinner
         android:id="@+id/conn_up_spinner"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_margin="10dp"
         android:padding="10dp"
-        app:layout_constraintEnd_toStartOf="@id/btn_cs"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/init_ble_connection_container" />
 
     <Button
         android:id = "@+id/conn_up_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="130dp"
+        android:layout_height="50dp"
         android:layout_margin="10dp"
         android:text = "update_conn"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/spinner_dm_method"
         app:layout_constraintTop_toBottomOf="@id/init_ble_connection_container" />
 
     <Spinner
         android:id="@+id/spinner_dm_method"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_margin="10dp"
         android:padding="10dp"
-        app:layout_constraintEnd_toStartOf="@id/btn_cs"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/conn_up_spinner" />
 
-        
+
     <Button
         android:id="@+id/btn_dm_method"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="130dp"
+        android:layout_height="50dp"
         android:layout_margin="10dp"
         android:text="DM method"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/spinner_dm_method"
-        app:layout_constraintTop_toBottomOf="@id/conn_up_spinner" />
-        
+        app:layout_constraintTop_toBottomOf="@id/conn_up_button" />
+
     <Spinner
         android:id="@+id/spinner_security_mode"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
         android:layout_margin="10dp"
         android:padding="10dp"
         app:layout_constraintStart_toStartOf="parent"
@@ -73,17 +69,17 @@
 
     <Button
         android:id="@+id/btn_seclevel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="130dp"
+        android:layout_height="50dp"
         android:layout_margin="10dp"
         android:text="Sec Level"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/spinner_dm_method" />
+        app:layout_constraintTop_toBottomOf="@id/btn_dm_method" />
 
     <Spinner
         android:id="@+id/spinner_frequency"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
         android:layout_margin="10dp"
         android:padding="10dp"
         app:layout_constraintStart_toStartOf="parent"
@@ -92,35 +88,33 @@
 
     <Button
         android:id="@+id/btn_frequency"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="130dp"
+        android:layout_height="50dp"
         android:layout_margin="10dp"
         android:padding="10dp"
         android:text="Frequency"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/spinner_frequency"
-        app:layout_constraintTop_toBottomOf="@id/spinner_security_mode" />
+        app:layout_constraintTop_toBottomOf="@id/btn_seclevel" />
 
     <EditText
-	    android:id="@+id/edittext_duration"
-	    android:layout_width="0dp"
+        android:id="@+id/edittext_duration"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-		android:layout_margin="10dp"
+        android:layout_margin="10dp"
         android:padding="10dp"
-		android:inputType="number"
+        android:inputType="number"
         android:hint="Default: 60 sec"
-		app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/spinner_frequency" />
 
     <Button
         android:id="@+id/btn_duration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="130dp"
+        android:layout_height="50dp"
         android:layout_margin="10dp"
         android:text="Duration"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/edittext_duration"
-        app:layout_constraintTop_toBottomOf="@id/spinner_frequency" />
+        app:layout_constraintTop_toBottomOf="@id/btn_frequency" />
 
     <Button
         android:id="@+id/btn_cs"
@@ -131,22 +125,31 @@
         android:padding="10dp"
         android:text="Start Distance Measurement"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/edittext_duration"
-        app:layout_constraintTop_toBottomOf="@id/btn_duration" />
+        app:layout_constraintTop_toBottomOf="@id/edittext_duration" />
 
     <Button
-        android:id="@+id/dist_logger"
+        android:id="@+id/marker_dist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:layout_marginTop="84dp"
         android:padding="10dp"
-        android:text="Distance Logger"
-		android:clickable="true"
+        android:text="marker"
+        android:clickable="true"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btn_cs"
-        app:layout_constraintStart_toEndOf="@id/parent"
-        app:layout_constraintTop_toBottomOf="@id/edittext_duration" />
+        app:layout_constraintTop_toBottomOf="@id/btn_cs" />
+
+    <EditText
+        android:id="@+id/distance_meas"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:padding="10dp"
+        android:inputType="number"
+        android:hint="Distance"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_cs" />
 
     <TextView
         android:id="@+id/text_log"
@@ -158,8 +161,8 @@
         android:textSize="18sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_cs"/>
-        
+        app:layout_constraintTop_toBottomOf="@id/marker_dist"/>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"

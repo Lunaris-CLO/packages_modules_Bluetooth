@@ -1908,9 +1908,17 @@ void bta_av_setconfig_rej(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
   uint8_t error_code = p_data->ci_setconfig.err_code;
 
   bta_av_adjust_seps_idx(p_scb, avdt_handle);
-  log::info("sep_idx={} avdt_handle={} bta_handle=0x{:x} error_code={}", p_scb->sep_idx,
+  log::info("sep_idx={} p_scb->avdt_handle={} bta_handle=0x{:x} error_code={}", p_scb->sep_idx,
             p_scb->avdt_handle, p_scb->hndl, error_code);
-  AVDT_ConfigRsp(p_scb->avdt_handle, p_scb->avdt_label, error_code, 0);
+  log::info("avdt_handle = {}", avdt_handle);
+
+  // The error code might not be set when the configuration is rejected
+  // based on the current AVDTP state.
+  if (error_code == AVDT_SUCCESS) {
+    error_code = AVDT_ERR_UNSUP_CFG;
+  }
+
+  AVDT_ConfigRsp(avdt_handle, p_scb->avdt_label, error_code, 0);
 
   tBTA_AV bta_av_data = {
       .reject =

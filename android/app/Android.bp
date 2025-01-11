@@ -160,6 +160,7 @@ cc_library_shared {
         "libstatssocket",
         "libvndksupport",
         "vendor.qti.hardware.bluetooth.audio-V1-ndk",
+        "libxml2",
     ],
     sanitize: {
         scs: true,
