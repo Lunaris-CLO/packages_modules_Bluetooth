@@ -656,7 +656,8 @@ class BtifAvSource {
           btif_av_update_codec_mode();
           log::info("Update AptX AD codec mode");
         }
-        if ((codec_config.sample_rate == cp.sample_rate) &&
+        if ((codec_config.codec_type == cp.codec_type) &&
+            (codec_config.sample_rate == cp.sample_rate) &&
             (codec_config.channel_mode == cp.channel_mode) &&
             (codec_config.bits_per_sample == cp.bits_per_sample)) {
           aptX_config_change = false;

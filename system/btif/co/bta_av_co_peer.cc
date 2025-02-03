@@ -23,6 +23,7 @@
 #include "bta/include/bta_av_api.h"
 #include "osi/include/properties.h"
 #include "device/include/interop.h"
+#include "btif/include/btif_config.h"
 
 using namespace bluetooth;
 
@@ -192,21 +193,28 @@ BtaAvCoSep* BtaAvCoPeerCache::FindPeerSink(BtaAvCoPeer* p_peer,
       continue;
     }
     if(codec_index == BTAV_A2DP_CODEC_INDEX_SOURCE_AAC) {
+      std::string remote_bdstr = p_peer->addr.ToString();
       log::verbose("Remote AAC VBR cap is {}",p_sink->codec_caps[6]);
       bool remote_vbr = (p_sink->codec_caps[6] >> 7) & 1;
+      if(remote_vbr) {
+          btif_config_set_str(remote_bdstr, BTIF_STORAGE_KEY_FOR_AAC_VBR, "true");
+      }
+      else {
+          btif_config_set_str(remote_bdstr, BTIF_STORAGE_KEY_FOR_AAC_VBR, "false");
+      }
       log::verbose("Checking if peer is in AAC WL");
       bool vbr_bl = false;
       bool vbr_supp = osi_property_get_bool("persist.vendor.qcom.bluetooth.aac_vbr_ctl.enabled",
                    true);
       log::verbose("AAC VBR prop value is {}", vbr_supp);
-      if (vbr_supp) {
-        if(remote_vbr) {
-          if (interop_match_addr(INTEROP_DISABLE_AAC_VBR_CODEC, &p_peer->addr)) {
-            log::verbose("AAC VBR is not supported for this BL remote device");
-            vbr_bl = true;
-          }
+
+      if(remote_vbr) {
+        if (interop_match_addr(INTEROP_DISABLE_AAC_VBR_CODEC, &p_peer->addr)) {
+          log::verbose("AAC VBR is not supported for this BL remote device");
+          vbr_bl = true;
         }
       }
+
       if(remote_vbr) {
         log::verbose("Remote supports AAC VBR");
         if (!vbr_bl) {

@@ -1492,18 +1492,10 @@ class CsisClientImpl : public CsisClient {
     if (csis_groups_.empty()) return;
 
     auto csis_device = FindDeviceByAddress(result->bd_addr);
-    if (csis_device) {
-      log::debug("Drop known device {}", result->bd_addr);
-      return;
-    }
-
-    /* Make sure device is not already bonded which could
-     * be a case for dual mode devices where
-     */
-    if (BTM_BleIsLinkKeyKnown(result->bd_addr)) {
-      log::verbose("Device {} already bonded. Identity address: {}",
-                   result->bd_addr,
-                   *BTM_BleGetIdentityAddress(result->bd_addr));
+    if (csis_device && BTM_BleIsLinkKeyKnown(result->bd_addr)) {
+      log::debug("Drop known device {} already bonded. Identity address: {}",
+                  result->bd_addr,
+                  *BTM_BleGetIdentityAddress(result->bd_addr));
       return;
     }
 

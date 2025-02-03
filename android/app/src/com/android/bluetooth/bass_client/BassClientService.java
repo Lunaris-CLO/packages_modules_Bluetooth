@@ -2447,13 +2447,12 @@ public class BassClientService extends ProfileService {
                 }
             }
         } else {
-            if (!isAllowedToAddSource()) {
-                Log.d(TAG, "Add source to pending list");
-                synchronized (mPendingAddSourcesLock) {
+            synchronized (mPendingAddSourcesLock) {
+                if (!isAllowedToAddSource()) {
+                    Log.d(TAG, "Add source to pending list");
                     mPendingAddSources.push(new AddSourceData(sink, sourceMetadata, isGroupOp));
+                    return;
                 }
-
-                return;
             }
         }
 

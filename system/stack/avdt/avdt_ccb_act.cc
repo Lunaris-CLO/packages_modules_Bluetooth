@@ -218,9 +218,14 @@ void avdt_ccb_hdl_discover_cmd(AvdtpCcb* p_ccb, tAVDT_CCB_EVT* p_data) {
 
     if (p_scb->stream_config.cfg.codec_info[AVDT_CODEC_TYPE_INDEX] == A2DP_MEDIA_CT_AAC) {
         bool vbr_bl = false;
+        char vbr_value[6];
+        int size = sizeof(vbr_value);
         bool vbr_supp = osi_property_get_bool("persist.vendor.qcom.bluetooth.aac_vbr_ctl.enabled",
                      true);
         log::verbose("AAC VBR prop value is {}", vbr_supp);
+        std::string bdstr = p_ccb->peer_addr.ToString();
+        btif_config_get_str(bdstr, BTIF_STORAGE_KEY_FOR_AAC_VBR, vbr_value, &size);
+        log::verbose("remote vbr support is {}", vbr_value);
         int scb_vbr_cap = 0;
         scb_vbr_cap = p_scb->stream_config.cfg.codec_info[6] & A2DP_AAC_VARIABLE_BIT_RATE_MASK;
         log::verbose("original vbr {}", scb_vbr_cap);
@@ -229,7 +234,7 @@ void avdt_ccb_hdl_discover_cmd(AvdtpCcb* p_ccb, tAVDT_CCB_EVT* p_data) {
           vbr_bl = true;
         }
         if(scb_vbr_cap) {
-          log::verbose("Device has VBR support");
+          log::verbose("DUT has VBR support");
           if (!vbr_bl) {
             log::verbose("AAC VBR is enabled, show AAC SEP for this peer device");
           } else if (avdt_ccb_check_peer_eligible_for_aac_codec(p_ccb)) {
@@ -239,12 +244,26 @@ void avdt_ccb_hdl_discover_cmd(AvdtpCcb* p_ccb, tAVDT_CCB_EVT* p_data) {
               continue;
           }
         } else {
-            log::verbose("Device does not have VBR support, check in AAC WL");
-            if (avdt_ccb_check_peer_eligible_for_aac_codec(p_ccb)) {
-              log::verbose("Show AAC SEP for this peer device");
-            } else {
-                log::verbose("Do not show AAC SEP for this peer device");
-                continue;
+            log::verbose("DUT does not have VBR support");
+            if(strcmp(vbr_value,"true") == 0) {
+              log::verbose("Remote device has VBR support");
+              if (!vbr_bl) {
+                log::verbose("Remote Device not in VBR BL, show AAC capability");
+              } else if (avdt_ccb_check_peer_eligible_for_aac_codec(p_ccb)) {
+                  log::verbose("Show AAC SEP for this peer device");
+              } else {
+                  log::verbose("Do not show AAC SEP for this peer device");
+                  continue;
+              }
+            }
+            else {
+              log::verbose("Remote device does not have VBR support");
+              if (avdt_ccb_check_peer_eligible_for_aac_codec(p_ccb)) {
+                log::verbose("Show AAC SEP for this peer device");
+              } else {
+                  log::verbose("Do not show AAC SEP for this peer device");
+                  continue;
+              }
             }
         }
     }

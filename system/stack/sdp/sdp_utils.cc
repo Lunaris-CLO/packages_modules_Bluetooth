@@ -1414,6 +1414,32 @@ uint16_t sdpu_is_avrcp_profile_description_list(const tSDP_ATTRIBUTE* p_attr) {
 }
 /*******************************************************************************
  *
+ * Function         sdpu_is_service_id_a2dp_src
+ *
+ * Description      This function is to check if attirbute is Advanced Audio
+ *                  Distribution Profile
+ *
+ *                  p_attr: attribute to be checked
+ *
+ * Returns          true if service id of attirbute is Advanced Audio
+ *                  Distribution Profile, else false
+ *
+ ******************************************************************************/
+bool sdpu_is_service_id_a2dp_src(const tSDP_ATTRIBUTE* p_attr) {
+  if (p_attr->id != ATTR_ID_SERVICE_CLASS_ID_LIST || p_attr->len != 3) {
+    return false;
+  }
+
+  uint8_t* p_uuid = p_attr->value_ptr + 1;
+  // check UUID of Advanced Audio Distribution Profile
+  if (p_uuid[0] != 0x11 || p_uuid[1] != 0xa) {
+    return false;
+  }
+
+  return true;
+}
+/*******************************************************************************
+ *
  * Function         sdpu_is_service_id_avrc_target
  *
  * Description      This function is to check if attirbute is A/V Remote Control

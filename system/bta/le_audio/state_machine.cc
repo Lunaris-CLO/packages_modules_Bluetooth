@@ -3634,7 +3634,6 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
     switch (ase->state) {
       case AseState::BTA_LE_AUDIO_ASE_STATE_DISABLING:
       case AseState::BTA_LE_AUDIO_ASE_STATE_CODEC_CONFIGURED:
-      case AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED:
         SetAseState(leAudioDevice, ase,
                     AseState::BTA_LE_AUDIO_ASE_STATE_RELEASING);
 
@@ -3687,6 +3686,7 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
         }
         break;
       }
+      case AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED:
       case AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING: {
         SetAseState(leAudioDevice, ase,
                     AseState::BTA_LE_AUDIO_ASE_STATE_RELEASING);

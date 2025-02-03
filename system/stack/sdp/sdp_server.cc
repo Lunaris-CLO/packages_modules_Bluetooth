@@ -52,6 +52,8 @@
 #define SDP_MAX_ATTR_RSPHDR_LEN 10
 #define PROFILE_VERSION_POSITION 7
 #define SDP_PROFILE_DESC_LENGTH 8
+#define A2DP_PROFILE_DEFAULT_VERSION_3 0x03
+#define A2DP_PROFILE_DEFAULT_VERSION_4 0x04
 #define HFP_PROFILE_MINOR_VERSION_6 0x06
 #define HFP_PROFILE_MINOR_VERSION_7 0x07
 #define HFP_PROFILE_MINOR_VERSION_9 0x09
@@ -133,11 +135,13 @@ bool sdp_dynamic_change_hfp_version(const tSDP_ATTRIBUTE* p_attr,
       (p_attr->len < SDP_PROFILE_DESC_LENGTH)) {
     return false;
   }
+  log::verbose("sdp_dynamic_change_hfp_version: {}", p_attr->value_ptr[4]);
   /* As per current DB implementation UUID is condidered as 16 bit */
   if (((p_attr->value_ptr[3] << SDP_PROFILE_DESC_LENGTH) |
        (p_attr->value_ptr[4])) != UUID_SERVCLASS_HF_HANDSFREE) {
     return false;
   }
+  log::verbose("sdp_dynamic_change_hfp_version: is HFP");
   bool is_allowlisted_1_7 =
       interop_match_addr_or_name(INTEROP_HFP_1_7_ALLOWLIST, &remote_address,
                                  &btif_storage_get_remote_device_property);
@@ -175,6 +179,56 @@ void hfp_fallback(bool& is_hfp_fallback, const tSDP_ATTRIBUTE* p_attr) {
   p_attr->value_ptr[PROFILE_VERSION_POSITION] = HFP_PROFILE_MINOR_VERSION_6;
   log::verbose("Restore HFP version to 1.6");
   is_hfp_fallback = false;
+}
+
+/*************************************************************************************
+**
+** Function        sdp_dynamic_change_a2dp_src_version
+**
+** Description     Checks if UUID is UUID_SERVCLASS_ADV_AUDIO_DISTRIBUTION,
+**                 attribute id is Profile descriptor list and remote BD address
+**                 matches device Allow list, change a2dp version to 1.3
+**
+** Returns         BOOLEAN
+**
++***************************************************************************************/
+bool sdp_dynamic_change_a2dp_src_version(const tSDP_ATTRIBUTE* p_attr,
+                                    const RawAddress& remote_address) {
+  if ((p_attr->id != ATTR_ID_BT_PROFILE_DESC_LIST) ||
+      (p_attr->len < SDP_PROFILE_DESC_LENGTH)) {
+    return false;
+  }
+  log::verbose("sdp_dynamic_change_a2dp_src_version: {}", p_attr->value_ptr[4]);
+  /* As per current DB implementation UUID is condidered as 16 bit */
+  if (((p_attr->value_ptr[3] << SDP_PROFILE_DESC_LENGTH) |
+       (p_attr->value_ptr[4])) != UUID_SERVCLASS_ADV_AUDIO_DISTRIBUTION) {
+    return false;
+  }
+  bool is_a2dp_1_3 =
+      interop_match_addr(INTEROP_A2DP_1_3_ONLY, &remote_address);
+  log::verbose("sdp_dynamic_change_a2dp_src_version, is_a2dp_1_3:{}", is_a2dp_1_3);
+  if (is_a2dp_1_3) {
+     p_attr->value_ptr[PROFILE_VERSION_POSITION] = A2DP_PROFILE_DEFAULT_VERSION_3;
+  }
+
+  log::verbose("SDP Change A2DP Version = {} for {}",
+               p_attr->value_ptr[PROFILE_VERSION_POSITION], remote_address);
+  return true;
+}
+/******************************************************************************
+ *
+ * Function         a2dp_fallback
+ *
+ * Description      Update A2DP version back to 1.4
+ *
+ * Returns          void
+ *
+ *****************************************************************************/
+void a2dp_fallback(bool& is_a2dp_fallback, const tSDP_ATTRIBUTE* p_attr) {
+  /* Update A2DP version back to 1.4 */
+  p_attr->value_ptr[PROFILE_VERSION_POSITION] = A2DP_PROFILE_DEFAULT_VERSION_4;
+  log::verbose("Restore A2DP version to 1.4");
+  is_a2dp_fallback = false;
 }
 
 /*******************************************************************************
@@ -456,6 +510,7 @@ static void process_service_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
   const tSDP_ATTRIBUTE* p_attr;
   bool is_cont = false;
   bool is_hfp_fallback = false;
+  bool is_a2dp_fallback = false;
   uint16_t attr_len;
 
   if (p_req + sizeof(rec_handle) + sizeof(max_list_len) > p_req_end) {
@@ -547,6 +602,7 @@ static void process_service_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
   }
 
   bool is_service_avrc_target = false;
+  bool is_service_a2dp_src = false;
   const tSDP_ATTRIBUTE* p_attr_service_id;
   const tSDP_ATTRIBUTE* p_attr_profile_desc_list_id;
   uint16_t avrc_sdp_version = 0;
@@ -556,6 +612,7 @@ static void process_service_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
       p_rec, ATTR_ID_BT_PROFILE_DESC_LIST, ATTR_ID_BT_PROFILE_DESC_LIST);
   if (p_attr_service_id) {
     is_service_avrc_target = sdpu_is_service_id_avrc_target(p_attr_service_id);
+    is_service_a2dp_src = sdpu_is_service_id_a2dp_src(p_attr_service_id);
   }
   /* Search for attributes that match the list given to us */
   for (xx = p_ccb->cont_info.next_attr_index; xx < attr_seq.num_attr; xx++) {
@@ -573,6 +630,10 @@ static void process_service_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
           sdpu_set_avrc_target_features(p_attr, &(p_ccb->device_address),
                                         avrc_sdp_version);
         }
+      }
+      log::warn("is_service_a2dp_src: {}", is_service_a2dp_src);
+      if (is_service_a2dp_src) {
+        is_a2dp_fallback = sdp_dynamic_change_a2dp_src_version(p_attr, p_ccb->device_address);
       }
       if (bluetooth::common::init_flags::hfp_dynamic_version_is_enabled()) {
         is_hfp_fallback =
@@ -635,10 +696,16 @@ static void process_service_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
       if (is_hfp_fallback) {
         hfp_fallback(is_hfp_fallback, p_attr);
       }
+      if (is_a2dp_fallback) {
+        a2dp_fallback(is_a2dp_fallback, p_attr);
+      }
     }
   }
   if (is_hfp_fallback) {
     hfp_fallback(is_hfp_fallback, p_attr);
+  }
+  if (is_a2dp_fallback) {
+    a2dp_fallback(is_a2dp_fallback, p_attr);
   }
   /* If all the attributes have been accomodated in p_rsp,
      reset next_attr_index */
@@ -831,6 +898,7 @@ static void process_service_search_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
   bool maxxed_out = false, is_cont = false;
   uint8_t* p_seq_start;
   bool is_hfp_fallback = false;
+  bool is_a2dp_fallback = false;
   uint16_t seq_len, attr_len;
 
   /* Extract the UUID sequence to search for */
@@ -934,6 +1002,7 @@ static void process_service_search_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
     }
 
     bool is_service_avrc_target = false;
+    bool is_service_a2dp_src = false;
     const tSDP_ATTRIBUTE* p_attr_service_id;
     const tSDP_ATTRIBUTE* p_attr_profile_desc_list_id;
     uint16_t avrc_sdp_version = 0;
@@ -944,6 +1013,7 @@ static void process_service_search_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
     if (p_attr_service_id) {
       is_service_avrc_target =
           sdpu_is_service_id_avrc_target(p_attr_service_id);
+      is_service_a2dp_src = sdpu_is_service_id_a2dp_src(p_attr_service_id);
     }
     /* Get a list of handles that match the UUIDs given to us */
     for (xx = p_ccb->cont_info.next_attr_index; xx < attr_seq.num_attr; xx++) {
@@ -965,10 +1035,15 @@ static void process_service_search_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
                                           avrc_sdp_version);
           }
         }
+        log::warn("is_service_a2dp_src: {}", is_service_a2dp_src);
+        if (is_service_a2dp_src) {
+          is_a2dp_fallback = sdp_dynamic_change_a2dp_src_version(p_attr, p_ccb->device_address);
+        }
         if (bluetooth::common::init_flags::hfp_dynamic_version_is_enabled()) {
           is_hfp_fallback =
               sdp_dynamic_change_hfp_version(p_attr, p_ccb->device_address);
         }
+
         /* Check if attribute fits. Assume 3-byte value type/length */
         rem_len = max_list_len - (int16_t)(p_rsp - &p_ccb->rsp_list[0]);
 
@@ -1030,10 +1105,16 @@ static void process_service_search_attr_req(tCONN_CB* p_ccb, uint16_t trans_num,
         if (is_hfp_fallback) {
           hfp_fallback(is_hfp_fallback, p_attr);
         }
+        if (is_a2dp_fallback) {
+          a2dp_fallback(is_a2dp_fallback, p_attr);
+        }
       }
     }
     if (is_hfp_fallback) {
       hfp_fallback(is_hfp_fallback, p_attr);
+    }
+    if (is_a2dp_fallback) {
+      a2dp_fallback(is_a2dp_fallback, p_attr);
     }
 
     /* Go back and put the type and length into the buffer */

@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <unordered_set>
 
+#include "bta/dm/bta_dm_act.h"
 #include "bta/include/bta_jv_co.h"
 #include "bta/include/bta_rfcomm_scn.h"
 #include "bta/jv/bta_jv_int.h"
@@ -40,6 +41,7 @@
 #include "osi/include/allocator.h"
 #include "osi/include/properties.h"
 #include "stack/btm/btm_sec.h"
+#include "stack/include/acl_api.h"
 #include "stack/include/avct_api.h"  // AVCT_PSM
 #include "stack/include/avdt_api.h"  // AVDT_PSM
 #include "stack/include/bt_hdr.h"
@@ -51,7 +53,6 @@
 #include "stack/include/l2cdefs.h"
 #include "stack/include/port_api.h"
 #include "stack/include/sdp_api.h"
-#include "stack/include/acl_api.h"
 #include "types/bluetooth/uuid.h"
 #include "types/raw_address.h"
 
@@ -474,7 +475,9 @@ static tBTA_JV_STATUS bta_jv_free_set_pm_profile_cb(uint32_t jv_handle) {
         bta_jv_pm_conn_idle(&bta_jv_cb.pm_cb[i]);
       }
 
-      if (bd_counter <= 1 || (appid_counter <= 1)) {
+      if (bd_counter <= 1 || (appid_counter <= 1) ||
+          !find_connected_device(bta_jv_cb.pm_cb[i].peer_bd_addr,
+                                 BT_TRANSPORT_BR_EDR)) {
         bta_jv_clear_pm_cb(&bta_jv_cb.pm_cb[i], true);
       } else {
         bta_jv_clear_pm_cb(&bta_jv_cb.pm_cb[i], false);

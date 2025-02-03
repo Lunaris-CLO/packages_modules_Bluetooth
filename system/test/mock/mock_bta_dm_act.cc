@@ -36,6 +36,7 @@ namespace mock {
 namespace bta_dm_act {
 
 // Function state capture and return values, if needed
+struct find_connected_device find_connected_device;
 struct BTA_DmSetVisibility BTA_DmSetVisibility;
 struct BTA_dm_acl_down BTA_dm_acl_down;
 struct BTA_dm_acl_up BTA_dm_acl_up;
@@ -81,6 +82,11 @@ struct handle_remote_features_complete handle_remote_features_complete;
 }  // namespace test
 
 // Mocked functions, if any
+tBTA_DM_PEER_DEVICE* find_connected_device(const RawAddress& bd_addr,
+                                           tBT_TRANSPORT transport) {
+  inc_func_call_count(__func__);
+  return test::mock::bta_dm_act::find_connected_device(bd_addr, transport);
+}
 bool BTA_DmSetVisibility(bt_scan_mode_t mode) {
   inc_func_call_count(__func__);
   return test::mock::bta_dm_act::BTA_DmSetVisibility(mode);

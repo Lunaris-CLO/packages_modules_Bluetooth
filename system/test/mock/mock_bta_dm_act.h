@@ -27,7 +27,9 @@
 // Original included files, if any
 #include <cstdint>
 
+#include "bta/dm/bta_dm_act.h"
 #include "bta/dm/bta_dm_disc_int.h"
+#include "bta/dm/bta_dm_int.h"
 #include "bta/dm/bta_dm_sec_int.h"
 #include "types/raw_address.h"
 
@@ -36,6 +38,22 @@
 namespace test {
 namespace mock {
 namespace bta_dm_act {
+// Name: find_connected_device
+// Params: const RawAddress bd_addr, tBT_TRANSPORT transport
+// Return: tBTA_DM_PEER_DEVICE*
+struct find_connected_device {
+  tBTA_DM_PEER_DEVICE* return_value;
+  std::function<tBTA_DM_PEER_DEVICE*(const RawAddress& bd_addr,
+                                     tBT_TRANSPORT transport)>
+      body{[this](const RawAddress& bd_addr, tBT_TRANSPORT transport) {
+        return return_value;
+      }};
+  tBTA_DM_PEER_DEVICE* operator()(const RawAddress& bd_addr,
+                                  tBT_TRANSPORT transport) {
+    return body(bd_addr, transport);
+  };
+};
+extern struct find_connected_device find_connected_device;
 
 // Shared state between mocked functions and tests
 // Name: BTA_DmSetVisibility

@@ -1863,6 +1863,11 @@ public class LeAudioService extends ProfileService {
             return;
         }
 
+        if (mBroadcastIdDeactivatedForUnicastTransition.isPresent()) {
+            Log.w(TAG, "Not set active to VC if broadcast deactivated for unicast call");
+            return;
+        }
+
         if (mExposedActiveDevice != null) {
             volumeControlService.setGroupActive(getGroupId(mExposedActiveDevice), false);
         }
@@ -2252,7 +2257,9 @@ public class LeAudioService extends ProfileService {
                         + ", "
                         + mActiveAudioInDevice
                         + ", notifyAndUpdateInactiveOutDeviceOnly: "
-                        + notifyAndUpdateInactiveOutDeviceOnly);
+                        + notifyAndUpdateInactiveOutDeviceOnly
+                        + ", mBroadcastIdDeactivatedForUnicastTransition.isPresent(): "
+                        + mBroadcastIdDeactivatedForUnicastTransition.isPresent());
         if ((isActive == true) &&
             (mActiveAudioOutDevice != null || mActiveAudioInDevice != null)) {
             LeAudioGroupDescriptor descriptor = getGroupDescriptor(groupId);
@@ -2265,7 +2272,8 @@ public class LeAudioService extends ProfileService {
         if (isNewActiveOutDevice) {
             int volume = IBluetoothVolumeControl.VOLUME_CONTROL_UNKNOWN_VOLUME;
 
-            if (mActiveAudioOutDevice != null) {
+            if (mActiveAudioOutDevice != null &&
+                    !mBroadcastIdDeactivatedForUnicastTransition.isPresent()) {
                 volume = getAudioDeviceGroupVolume(groupId);
             }
 

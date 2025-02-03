@@ -45,6 +45,7 @@
 /* Maximum size in bytes of the codec capabilities information element. */
 #define AVDT_CODEC_SIZE 45
 #define BTIF_STORAGE_KEY_FOR_SUPPORTED_CODECS "Codecs"
+#define BTIF_STORAGE_KEY_FOR_AAC_VBR "vbr_remote"
 /* API function return value result codes. */
 typedef enum : uint16_t {
   AVDT_SUCCESS = 0,      /* Function successful */

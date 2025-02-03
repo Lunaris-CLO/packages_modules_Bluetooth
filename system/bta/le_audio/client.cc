@@ -5596,8 +5596,19 @@ class LeAudioClientImpl : public LeAudioClient {
      * on how to configure each channel. We should align the other direction
      * metadata for the remote device.
      */
+
+    auto is_game_vbc = false;
+    constexpr AudioContexts game_context(LeAudioContextType::GAME);
+    constexpr AudioContexts live_context(LeAudioContextType::LIVE);
+    if (remote_direction == bluetooth::le_audio::types::kLeAudioDirectionSource &&
+        remote_metadata.get(remote_direction).test_any(live_context) &&
+        remote_metadata.get(remote_other_direction).test_any(game_context)) {
+      log::debug("Gaming vbc enabled");
+      is_game_vbc = true;
+    }
+
     if (remote_metadata.get(remote_direction)
-            .test_any(kLeAudioContextAllBidir)) {
+            .test_any(kLeAudioContextAllBidir) && !is_game_vbc) {
       log::debug(
           "Aligning the other direction remote metadata to add this direction "
           "context");

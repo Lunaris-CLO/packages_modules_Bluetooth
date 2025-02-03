@@ -294,6 +294,7 @@ bool SDP_AddProfileDescriptorListToRecord(tSDP_RECORD* p_rec,
 bool SDP_DeleteAttributeFromRecord(tSDP_RECORD* p_rec, uint16_t attr_id);
 uint16_t sdpu_is_avrcp_profile_description_list(const tSDP_ATTRIBUTE* p_attr);
 bool sdpu_is_service_id_avrc_target(const tSDP_ATTRIBUTE* p_attr);
+bool sdpu_is_service_id_a2dp_src(const tSDP_ATTRIBUTE* p_attr);
 bool spdu_is_avrcp_version_valid(const uint16_t version);
 void sdpu_set_avrc_target_version(const tSDP_ATTRIBUTE* p_attr,
                                   const RawAddress* bdaddr);
