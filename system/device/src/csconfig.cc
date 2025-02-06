@@ -11,6 +11,7 @@
 #include "osi/include/config.h"
 #include "osi/include/future.h"
 #include <libxml/parser.h>
+#include "osi/include/properties.h"
 
 using namespace bluetooth;
 void parsecsProcedureSettings(xmlNode *);
@@ -120,6 +121,7 @@ void print_cs_procedure_settings() {
 void parsecsConfigSettings(xmlNode *input_node) {
    unsigned int TempFieldsCount = 0;
    std::stack<xmlNode*> profile_node_stack;
+   unsigned int TempConfigsCount = 0;
    xmlNode *FirstChild = xmlFirstElementChild(input_node);
    unsigned long CsConfigFields = xmlChildElementCount(FirstChild);
    tCS_CONFIG temp_cs_config;
@@ -198,6 +200,8 @@ void parsecsConfigSettings(xmlNode *input_node) {
             log::info("Done with {} many elements", CsConfigFields);
             cs_config_settings.push_back(temp_cs_config);
             memset(&temp_cs_config, 0, sizeof(tCS_CONFIG));
+            TempFieldsCount = 0;
+            TempConfigsCount++;
          }
          }
        }
@@ -298,8 +302,17 @@ void ReadLocalConfigs(void)
 {
   xmlDoc *doc = NULL;
   xmlNode *root_element = NULL;
+  bool local_config = false;
 
+  char value[PROPERTY_VALUE_MAX];
+  if (osi_property_get("persist.vendor.service.bt.config.local", value, "false")) {
+      if (strncmp(value, "true", PROPERTY_VALUE_MAX) == 0)
+       local_config = true;
+  }
+  if (!local_config)
   doc = xmlReadFile(CS_CONFIG_PATH, NULL, 0);
+  else
+    doc = xmlReadFile(CS_CONFIG_PATH_LOCAL, NULL, 0);
   if (doc == NULL) {
     log::error("Could not parse the CS XML file {}", CS_CONFIG_PATH);
     return;

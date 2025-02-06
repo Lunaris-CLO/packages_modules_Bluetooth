@@ -1202,7 +1202,9 @@ void GATT_SetIdleTimeout(const RawAddress& bd_addr, uint16_t idle_tout,
   if (p_tcb != nullptr) {
     status = L2CA_SetLeGattTimeout(bd_addr, idle_tout);
 
-    status &= L2CA_MarkLeLinkAsActive(bd_addr, is_active);
+    if (is_active) {
+      status &= L2CA_MarkLeLinkAsActive(bd_addr);
+    }
 
     if (idle_tout == GATT_LINK_IDLE_TIMEOUT_WHEN_NO_APP) {
       if (!L2CA_SetIdleTimeoutByBdAddr(p_tcb->peer_bda,

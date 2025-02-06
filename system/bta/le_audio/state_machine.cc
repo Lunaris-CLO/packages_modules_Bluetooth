@@ -2023,8 +2023,11 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
         /* First is ase pair is Sink, second Source */
         auto ases_pair = leAudioDevice->GetAsesByCisConnHdl(ase->cis_conn_hdl);
 
-        /* Already in pending state - bi-directional CIS */
-        if (ase->cis_state == CisState::CONNECTING) continue;
+        /* Already in pending state - bi-directional CIS or second CIS to */
+        /* same device*/
+        if (ase->cis_state == CisState::CONNECTING ||
+            ase->cis_state == CisState::CONNECTED)
+          continue;
 
         if (ases_pair.sink) ases_pair.sink->cis_state = CisState::CONNECTING;
         if (ases_pair.source)

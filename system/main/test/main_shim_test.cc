@@ -79,6 +79,7 @@ namespace test = bluetooth::hci::testing;
 
 const uint8_t kMaxLeAcceptlistSize = 16;
 const uint8_t kMaxAddressResolutionSize = kMaxLeAcceptlistSize;
+bool host_supports_cs = false;
 
 tL2C_CB l2cb;
 tBTM_CB btm_cb;

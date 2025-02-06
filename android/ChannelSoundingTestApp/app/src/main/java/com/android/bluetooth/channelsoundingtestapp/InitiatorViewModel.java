@@ -34,7 +34,6 @@ import java.util.List;
 
 /** ViewModel for the Initiator. */
 public class InitiatorViewModel extends AndroidViewModel {
-
     private final MutableLiveData<String> mLogText = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mCsStarted = new MutableLiveData<>(false);
 
@@ -79,8 +78,11 @@ public class InitiatorViewModel extends AndroidViewModel {
       public static void appendToFile(Context context, String filename, String data) {
         FileOutputStream fos = null;
         try {
-          fos = context.openFileOutput(filename, Context.MODE_APPEND);
-          fos.write(data.getBytes());
+          if (fos != null) {
+            fos = context.openFileOutput(filename, Context.MODE_APPEND);
+            fos.write(data.getBytes());
+            fos.close();
+          }
         } catch (IOException e) {
           e.printStackTrace();
         } finally {

@@ -23,5 +23,12 @@ android_app {
         "truth",
     ],
 
-    privileged: true,
-}
+   privileged: true,
+   required: ["com.android.bluetooth.channelsoundingtestapp.xml"],
+ }
+
+   prebuilt_etc {
+    name: "com.android.bluetooth.channelsoundingtestapp.xml",
+    src: "com.android.bluetooth.channelsoundingtestapp.xml",
+    sub_dir: "permissions",
+  }

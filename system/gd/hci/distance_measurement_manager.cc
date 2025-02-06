@@ -29,6 +29,7 @@
 #include <chrono>
 #include <complex>
 #include <unordered_map>
+#include <sys/time.h>
 
 #include "acl_manager/assembler.h"
 #include "common/strings.h"
@@ -48,6 +49,7 @@
 using namespace bluetooth::ras;
 using bluetooth::hci::acl_manager::PacketViewForRecombination;
 
+extern bool host_supports_cs;
 namespace bluetooth {
 namespace hci {
 const ModuleFactory DistanceMeasurementManager::Factory =
@@ -80,6 +82,8 @@ static constexpr uint8_t kInvalidConfigId = 0xFF;
 static constexpr uint16_t kDefaultIntervalMs = 1000;  // 1s
 static constexpr uint32_t kMaxIntervalMs = 3600*1000;  // 3600
 static constexpr uint8_t kMaxRetryCounterForCreateConfig = 0x03;
+long long proc_start_timestampMs;
+long long curr_proc_complete_timestampMs;
 
 struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
   struct CsProcedureData {
@@ -272,10 +276,11 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     ranging_hal_ = ranging_hal;
     hci_layer_ = hci_layer;
     acl_manager_ = acl_manager;
+
     hci_layer_->RegisterLeEventHandler(hci::SubeventCode::TRANSMIT_POWER_REPORTING,
                                        handler_->BindOn(this, &impl::on_transmit_power_reporting));
-    if (!com::android::bluetooth::flags::channel_sounding_in_stack()) {
-      log::info("IS_FLAG_ENABLED channel_sounding_in_stack: false");
+    if (!host_supports_cs) {
+      log::info("host is not supporting channel sounding: false");
       return;
     }
     distance_measurement_interface_ = hci_layer_->GetDistanceMeasurementInterface(
@@ -292,7 +297,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 
   void register_distance_measurement_callbacks(DistanceMeasurementCallbacks* callbacks) {
     distance_measurement_callbacks_ = callbacks;
-    if (com::android::bluetooth::flags::channel_sounding_in_stack() && ranging_hal_->IsBound()) {
+    if (host_supports_cs && ranging_hal_->IsBound()) {
       auto vendor_specific_data = ranging_hal_->GetVendorSpecificCharacteristics();
       if (!vendor_specific_data.empty()) {
         distance_measurement_callbacks_->OnVendorSpecificCharacteristics(vendor_specific_data);
@@ -304,7 +309,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 		     int mCsSecurityLevel, int mFrequency, int mDuration) {
     uint16_t connection_handle = acl_manager_->HACK_GetLeHandle(cs_remote_address);
 
-    if (!com::android::bluetooth::flags::channel_sounding_in_stack()) {
+    if (!host_supports_cs) {
       log::error("Channel Sounding is not enabled");
       distance_measurement_callbacks_->OnDistanceMeasurementStopped(
 		      cs_remote_address, REASON_INTERNAL_ERROR, METHOD_CS);
@@ -431,7 +436,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
   void start_distance_measurement_with_cs(const Address& cs_remote_address,
                                           uint16_t connection_handle) {
     log::info("connection_handle: {}, address: {}", connection_handle, cs_remote_address);
-    if (!com::android::bluetooth::flags::channel_sounding_in_stack()) {
+    if (!host_supports_cs) {
       log::error("Channel Sounding is not enabled");
       distance_measurement_callbacks_->OnDistanceMeasurementStopped(
               cs_remote_address, REASON_INTERNAL_ERROR, METHOD_CS);
@@ -714,6 +719,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       for (int i = 0; i < CS_CHANNEL_MAP_SIZE; i++) {
         channel_map[i] = config_settings.channel_map[i];
       }
+      cs_requester_trackers_[connection_handle].config_id = config_settings.config_id;
       hci_layer_->EnqueueCommand(
             LeCsCreateConfigBuilder::Create(
             connection_handle,
@@ -1179,7 +1185,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
         log::error("no tracker is available for {}", connection_handle);
         return;
       }
-      log::debug("Procedure enabled, {}", event_view.ToString());
+      log::info("Procedure enabled, {}", event_view.ToString());
       live_tracker->state = CsTrackerState::STARTED;
       // assign the config_id, as this is may be the 1st time to get it for responder;
       live_tracker->config_id = config_id;
@@ -1191,6 +1197,9 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
         distance_measurement_callbacks_->OnDistanceMeasurementStarted(live_tracker->address,
                                                                       METHOD_CS);
       }
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      proc_start_timestampMs = tv.tv_sec*1e6*1ll + tv.tv_usec*1ll;
     } else if (event_view.GetState() == Enable::DISABLED) {
       uint8_t valid_requester_states = static_cast<uint8_t>(CsTrackerState::STARTED);
       uint8_t valid_responder_states = static_cast<uint8_t>(CsTrackerState::STARTED);
@@ -1890,6 +1899,13 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
         raw_data.tod_toa_reflectors_ = procedure_data->tod_toa_reflectors;
         raw_data.packet_quality_initiator_ = procedure_data->packet_quality_initiator;
         raw_data.packet_quality_reflector_ = procedure_data->packet_quality_reflector;
+        struct timeval tv;
+	    gettimeofday(&tv, NULL);
+	    curr_proc_complete_timestampMs  = tv.tv_sec*1e6*1ll + tv.tv_usec*1ll;
+        raw_data.timestampMs_ = (long)(curr_proc_complete_timestampMs - proc_start_timestampMs);
+		log::info("timestampMs_: {} current_proc : {} proc start :{}",
+		            raw_data.timestampMs_, curr_proc_complete_timestampMs,
+		            proc_start_timestampMs);
         ranging_hal_->WriteRawData(connection_handle, raw_data);
       }
     }

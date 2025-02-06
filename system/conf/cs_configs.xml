@@ -117,10 +117,10 @@
         <MaxProcedureCount>0</MaxProcedureCount>
         <MinSubEventLen>00 50 00</MinSubEventLen>
         <MaxSubEventLen>03 50 00</MaxSubEventLen>
-        <ToneAntennaConfigSelection>7</ToneAntennaConfigSelection>
+        <ToneAntennaConfigSelection>0</ToneAntennaConfigSelection>
         <Phy>1</Phy>
         <TxPowerDelta>0</TxPowerDelta>
-        <PreferredPeerAntenna>1 1 0 0</PreferredPeerAntenna>
+        <PreferredPeerAntenna>1 0 0 0</PreferredPeerAntenna>
         <SnrControlInitiator>255</SnrControlInitiator>
         <SnrControlReflector>255</SnrControlReflector>
     </CsProcedureSettings>

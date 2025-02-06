@@ -602,12 +602,17 @@ void bta_ag_rfc_acp_open(tBTA_AG_SCB* p_scb, const tBTA_AG_DATA& data) {
       // If client port is opened, close it, state machine will handle rfcomm
       // closed in opening state as failure and pass to upper layer
       if (ag_scb.conn_handle > 0) {
-        status = RFCOMM_RemoveConnection(ag_scb.conn_handle);
-        if (status != PORT_SUCCESS) {
-          log::warn(
-              "RFCOMM_RemoveConnection failed for {}, handle {}, error {}",
-              dev_addr, ag_scb.conn_handle, status);
-        }
+        if(!ag_scb.svc_conn){
+           status = RFCOMM_RemoveConnection(ag_scb.conn_handle);
+           if (status != PORT_SUCCESS) {
+              log::warn(
+                 "RFCOMM_RemoveConnection failed for {}, handle {}, error {}",
+               dev_addr, ag_scb.conn_handle, status);
+            }
+         } else {
+            log::warn(
+                 "No call RFCOMM_RemoveConnection as SLC is on ");
+         }
       } else if (com::android::bluetooth::flags::reset_after_collision()) {
         // As no existing outgoing rfcomm connection, then manual reset current
         // state, and use the incoming one

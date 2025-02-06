@@ -19,6 +19,8 @@
 #include "gtest/gtest.h"
 #include "os/thread.h"
 
+bool host_supports_cs = false;
+
 namespace bluetooth {
 namespace {
 

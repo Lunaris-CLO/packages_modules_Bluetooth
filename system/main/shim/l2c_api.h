@@ -403,7 +403,7 @@ void L2CA_LeConnectionUpdate(const RawAddress& rem_bda, uint16_t min_int,
  ******************************************************************************/
 bool L2CA_SetLeGattTimeout(const RawAddress& rem_bda, uint16_t idle_tout);
 
-bool L2CA_MarkLeLinkAsActive(const RawAddress& rem_bda, bool is_active);
+bool L2CA_MarkLeLinkAsActive(const RawAddress& rem_bda);
 
 bool L2CA_UpdateBleConnParams(const RawAddress& rem_bda, uint16_t min_int,
                               uint16_t max_int, uint16_t latency,

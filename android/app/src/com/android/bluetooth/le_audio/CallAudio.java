@@ -345,6 +345,16 @@ public class CallAudio {
             Log.w(TAG,"broadcastConnectionState: HeadsetService not initialized. Return!");
             return;
         }
+
+        if (device.equals(mActiveDevice) && fromState != toState &&
+                                         toState == BluetoothProfile.STATE_DISCONNECTED) {
+            if (mHandler.hasMessages(MESSAGE_VOIP_CALL_STARTED)) {
+                mHandler.removeMessages(MESSAGE_VOIP_CALL_STARTED);
+            }
+            if (mHandler.hasMessages(MESSAGE_ACTIVE_HFP_DEVICE_CHANGE)) {
+                mHandler.removeMessages(MESSAGE_ACTIVE_HFP_DEVICE_CHANGE);
+            }
+        }
         //AOSP specific
         headsetService.onConnectionStateChangedFromStateMachine(device, fromState, toState);
 
@@ -472,18 +482,26 @@ public class CallAudio {
                                             headsetService.isInbandRingingEnabled()))) {
                 broadcastActiveDevice(device);
             } else {
+                if (mHandler.hasMessages(MESSAGE_ACTIVE_HFP_DEVICE_CHANGE)) {
+                    Log.d(TAG,"updateActiveDevice, remove MESSAGE_ACTIVE_HFP_DEVICE_CHANGE first.");
+                    mHandler.removeMessages(MESSAGE_ACTIVE_HFP_DEVICE_CHANGE);
+                }
                 if (mActiveDevice != null && (mActiveProfile != profile ||
                                               mActiveProfile == HFP)) {
                     Log.d(TAG,"updateActiveDevice, broadcast previous hfp device to null.");
+                    stopScoUsingVirtualVoiceCall();
                     broadcastActiveDevice(null);
                 }
                 Message msg = mHandler.obtainMessage(MESSAGE_ACTIVE_HFP_DEVICE_CHANGE);
-                mHandler.sendMessageDelayed(msg, 2000);
+                mHandler.sendMessageDelayed(msg, 3000);
             }
             mActiveDevice = device;
             mActiveProfile = profile;
         } else if (mActiveProfile == profile){
             Log.d(TAG,"updateActiveDevice, update device to null.");
+            if (mHandler.hasMessages(MESSAGE_ACTIVE_HFP_DEVICE_CHANGE)) {
+                mHandler.removeMessages(MESSAGE_ACTIVE_HFP_DEVICE_CHANGE);
+            }
             broadcastActiveDevice(null);
             mActiveDevice = device;
         }
@@ -491,7 +509,7 @@ public class CallAudio {
     }
 
     //Todo: CSIP use-case and profiles siwtch for not dual mode in same device
-    public void onConnStateChange(BluetoothDevice device, Integer state, Integer profile) {
+    public synchronized void onConnStateChange(BluetoothDevice device, Integer state, Integer profile) {
         int prevState;
         Log.d(TAG, "onConnStateChange: profile: " + profile + " state: "
                                                   + state + " for device " + device);

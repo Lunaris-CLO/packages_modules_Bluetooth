@@ -338,6 +338,7 @@ class RangingHalAndroid : public RangingHal {
     hal_raw_data.reflectorData.packetQuality = reflpacketQuality_;
     hal_raw_data.toaTodInitiator = toaTodInitiator_;
     hal_raw_data.todToaReflector = todToaReflector_;
+    hal_raw_data.timestampMs = raw_data.timestampMs_;
 
     log::debug("frequencyCompensation:{} StepMode:{} packetRssiDbm:{}, packetQuality:{}, \
             measuredFreqOffset:{} AntennaPermutationIndex : {} \

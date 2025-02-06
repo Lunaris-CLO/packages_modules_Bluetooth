@@ -535,11 +535,15 @@ class ClassicShimAclConnection
         connection_(std::move(connection)) {}
 
   void RegisterCallbacks() override {
-    connection_->RegisterCallbacks(this, handler_);
+    if (connection_) {
+      connection_->RegisterCallbacks(this, handler_);
+    }
   }
 
   void ReadRemoteControllerInformation() override {
-    connection_->ReadClockOffset();
+    if (connection_) {
+      connection_->ReadClockOffset();
+    }
   }
 
   void OnConnectionPacketTypeChanged(uint16_t packet_type) override {
@@ -563,6 +567,7 @@ class ClassicShimAclConnection
 
   void OnReadClockOffsetComplete(uint16_t hci_handle, uint16_t clock_offset) override {
     log::info("OnReadClockOffsetComplete");
+    if (connection_ == nullptr) return;
     connection_->ReadRemoteVersionInformation();
     TRY_POSTING_ON_MAIN(interface_.on_read_clock_offset_complete, hci_handle, clock_offset);
   }
@@ -655,6 +660,7 @@ class ClassicShimAclConnection
   }
 
   void OnRoleChange(hci::ErrorCode hci_status, hci::Role new_role) override {
+    if (connection_ == nullptr) return;
     TRY_POSTING_ON_MAIN(
         interface_.on_role_change, ToLegacyHciErrorCode(hci_status),
         ToRawAddress(connection_->GetAddress()), ToLegacyRole(new_role));
@@ -682,6 +688,7 @@ class ClassicShimAclConnection
   }
 
   void OnReadRemoteSupportedFeaturesComplete(uint64_t features) override {
+    if (connection_ == nullptr) return;
     TRY_POSTING_ON_MAIN(interface_.on_read_remote_supported_features_complete,
                         handle_, features);
 
@@ -704,6 +711,7 @@ class ClassicShimAclConnection
       return;
     }
 
+    if (connection_ == nullptr) return;
     if (max_page_number != 0 && page_number != max_page_number)
       connection_->ReadRemoteExtendedFeatures(page_number + 1);
   }
@@ -711,10 +719,13 @@ class ClassicShimAclConnection
   hci::Address GetRemoteAddress() const { return connection_->GetAddress(); }
 
   void InitiateDisconnect(hci::DisconnectReason reason) override {
-    connection_->Disconnect(reason);
+    if (connection_) {
+      connection_->Disconnect(reason);
+    }
   }
 
   void HoldMode(uint16_t max_interval, uint16_t min_interval) {
+    if (connection_ == nullptr) return;
     log::assert_that(
         connection_->HoldMode(max_interval, min_interval),
         "assert failed: connection_->HoldMode(max_interval, min_interval)");
@@ -722,6 +733,7 @@ class ClassicShimAclConnection
 
   void SniffMode(uint16_t max_interval, uint16_t min_interval, uint16_t attempt,
                  uint16_t timeout) {
+    if (connection_ == nullptr) return;
     log::assert_that(
         connection_->SniffMode(max_interval, min_interval, attempt, timeout),
         "assert failed:  connection_->SniffMode(max_interval, min_interval, "
@@ -729,12 +741,14 @@ class ClassicShimAclConnection
   }
 
   void ExitSniffMode() {
+    if (connection_ == nullptr) return;
     log::assert_that(connection_->ExitSniffMode(),
                      "assert failed: connection_->ExitSniffMode()");
   }
 
   void SniffSubrating(uint16_t maximum_latency, uint16_t minimum_remote_timeout,
                       uint16_t minimum_local_timeout) {
+    if (connection_ == nullptr) return;
     log::assert_that(
         connection_->SniffSubrating(maximum_latency, minimum_remote_timeout,
                                     minimum_local_timeout),
@@ -743,6 +757,7 @@ class ClassicShimAclConnection
   }
 
   void SetConnectionEncryption(hci::Enable is_encryption_enabled) {
+    if (connection_ == nullptr) return;
     log::assert_that(
         connection_->SetConnectionEncryption(is_encryption_enabled),
         "assert failed: "
@@ -750,10 +765,15 @@ class ClassicShimAclConnection
   }
 
   bool IsLocallyInitiated() const override {
+    if (connection_ == nullptr) return false;
     return connection_->locally_initiated_;
   }
 
-  void Flush() { connection_->Flush(); }
+  void Flush() {
+    if (connection_) {
+      connection_->Flush();
+    }
+  }
 
  private:
   OnDisconnect on_disconnect_;
@@ -778,14 +798,18 @@ class LeShimAclConnection
         connection_(std::move(connection)) {}
 
   void RegisterCallbacks() override {
-    connection_->RegisterCallbacks(this, handler_);
+    if (connection_) {
+      connection_->RegisterCallbacks(this, handler_);
+    }
   }
 
   void LeSubrateRequest(uint16_t subrate_min, uint16_t subrate_max,
                         uint16_t max_latency, uint16_t cont_num,
                         uint16_t sup_tout) {
-    connection_->LeSubrateRequest(subrate_min, subrate_max, max_latency,
-                                  cont_num, sup_tout);
+    if (connection_) {
+      connection_->LeSubrateRequest(subrate_min, subrate_max, max_latency,
+                                    cont_num, sup_tout);
+    }
   }
 
   void ReadRemoteControllerInformation() override {
@@ -874,20 +898,24 @@ class LeShimAclConnection
   }
 
   void InitiateDisconnect(hci::DisconnectReason reason) override {
+    if (connection_ == nullptr) return;
     connection_->Disconnect(reason);
   }
 
   bool IsLocallyInitiated() const override {
+    if (connection_ == nullptr) return false;
     return connection_->locally_initiated_;
   }
 
   bool IsInFilterAcceptList() const {
+    if (connection_ == nullptr) return false;
     return connection_->IsInFilterAcceptList();
   }
 
   void UpdateConnectionParameters(uint16_t conn_int_min, uint16_t conn_int_max,
                                   uint16_t conn_latency, uint16_t conn_timeout,
                                   uint16_t min_ce_len, uint16_t max_ce_len) {
+    if (connection_ == nullptr) return;
     connection_->LeConnectionUpdate(conn_int_min, conn_int_max, conn_latency,
                                     conn_timeout, min_ce_len, max_ce_len);
   }

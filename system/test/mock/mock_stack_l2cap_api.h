@@ -415,11 +415,9 @@ extern struct L2CA_SetLeGattTimeout L2CA_SetLeGattTimeout;
 // Params: const RawAddress& rem_bda
 // Returns: bool
 struct L2CA_MarkLeLinkAsActive {
-  std::function<bool(const RawAddress& rem_bda, bool is_active)> body{
-      [](const RawAddress& /* rem_bda */, bool /* is_active */) { return false; }};
-  bool operator()(const RawAddress& rem_bda, bool is_active) { return
-    body(rem_bda, is_active);
-  };
+  std::function<bool(const RawAddress& rem_bda)> body{
+      [](const RawAddress& /* rem_bda */) { return false; }};
+  bool operator()(const RawAddress& rem_bda) { return body(rem_bda); };
 };
 extern struct L2CA_MarkLeLinkAsActive L2CA_MarkLeLinkAsActive;
 // Name: L2CA_DataWrite

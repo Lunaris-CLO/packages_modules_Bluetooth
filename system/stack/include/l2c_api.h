@@ -861,8 +861,7 @@ typedef struct {
 [[nodiscard]] bool L2CA_SetLeGattTimeout(const RawAddress& rem_bda,
                                          uint16_t idle_tout);
 
-[[nodiscard]] bool L2CA_MarkLeLinkAsActive(const RawAddress& rem_bda,
-                                           bool is_active);
+[[nodiscard]] bool L2CA_MarkLeLinkAsActive(const RawAddress& rem_bda);
 
 [[nodiscard]] bool L2CA_UpdateBleConnParams(const RawAddress& rem_bda,
                                             uint16_t min_int, uint16_t max_int,

@@ -1467,13 +1467,13 @@ bool L2CA_SetLeGattTimeout(const RawAddress& rem_bda, uint16_t idle_tout) {
   return true;
 }
 
-bool L2CA_MarkLeLinkAsActive(const RawAddress& rem_bda, bool is_active) {
+bool L2CA_MarkLeLinkAsActive(const RawAddress& rem_bda) {
   tL2C_LCB* p_lcb = l2cu_find_lcb_by_bd_addr(rem_bda, BT_TRANSPORT_LE);
   if (p_lcb == NULL) {
     return false;
   }
-  log::info("setting link to {} as {}(1-active, 0-inactive)", rem_bda, is_active);
-  p_lcb->with_active_local_clients = is_active;
+  log::info("setting link to {} as active", rem_bda);
+  p_lcb->with_active_local_clients = true;
   return true;
 }
 

@@ -2273,6 +2273,10 @@ void bdt_init(void) {
 
     sGattIfaceScan->init(&sGatt_cb);
     bdt_log("Get GATT init Done");
+
+    // Starting rust module
+    sBtInterface->start_rust_module();
+
     status = sBtInterface->set_os_callouts(&bt_os_callbacks);
   }
   check_return_status(status);
@@ -2316,6 +2320,10 @@ void do_pairing(char* p) {
 
 void bdt_cleanup(void) {
   bdt_log("CLEANUP");
+  // stopping rust module
+  sBtInterface->stop_rust_module();
+  sGattIfaceScan->cleanup();
+
   sBtInterface->cleanup();
 }
 

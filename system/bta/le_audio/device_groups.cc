@@ -91,7 +91,7 @@ int LeAudioDeviceGroup::Size(void) const { return leAudioDevices_.size(); }
 int LeAudioDeviceGroup::DesiredSize(void) const {
   int group_size = 0;
   if (bluetooth::csis::CsisClient::IsCsisClientRunning()) {
-    group_size = bluetooth::csis::CsisClient::Get()->GetDesiredSize(group_id_);
+    group_size = bluetooth::csis::CsisClient::Get() ? bluetooth::csis::CsisClient::Get()->GetDesiredSize(group_id_) : 0;
   }
 
   return group_size > 0 ? group_size : leAudioDevices_.size();

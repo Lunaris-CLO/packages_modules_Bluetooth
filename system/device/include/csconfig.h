@@ -24,6 +24,7 @@
 #endif  // defined(__ANDROID__)
 #endif  // CS_CONFIG_PATH
 
+#define CS_CONFIG_PATH_LOCAL "/data/misc/bluetooth/cs_configs.xml"
 static const char CS_CONFIG_MODULE[] = "cs_config_module";
 typedef struct {
   uint8_t enable;

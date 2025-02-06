@@ -377,10 +377,13 @@ void btif_dm_sdp_delay_timer(const RawAddress *bl_bdaddr) {
 bt_status_t btif_in_execute_service_request(tBTA_SERVICE_ID service_id,
                                             bool b_enable) {
   log::verbose("service_id:{}", service_id);
-  log::warn("b_enable: {}", b_enable);
-  //bta_dm_clean_
+
   if (service_id == BTA_A2DP_SOURCE_SERVICE_ID && !b_enable) {
     bta_dm_bredr_cleanup();
+    if (pairing_cb.state == BT_BOND_STATE_BONDING) {
+      log::warn("Device in bonding state, proceeding to cancel bond!");
+      btif_dm_cancel_bond(pairing_cb.bd_addr);
+    }
   }
 
   if (service_id == BTA_A2DP_SOURCE_SERVICE_ID && b_enable) {

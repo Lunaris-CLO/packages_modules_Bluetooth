@@ -233,9 +233,9 @@ bool L2CA_SetLeGattTimeout(const RawAddress& rem_bda, uint16_t idle_tout) {
   inc_func_call_count(__func__);
   return test::mock::stack_l2cap_api::L2CA_SetLeGattTimeout(rem_bda, idle_tout);
 }
-bool L2CA_MarkLeLinkAsActive(const RawAddress& rem_bda, bool is_active) {
+bool L2CA_MarkLeLinkAsActive(const RawAddress& rem_bda) {
   inc_func_call_count(__func__);
-  return test::mock::stack_l2cap_api::L2CA_MarkLeLinkAsActive(rem_bda, is_active);
+  return test::mock::stack_l2cap_api::L2CA_MarkLeLinkAsActive(rem_bda);
 }
 uint8_t L2CA_DataWrite(uint16_t cid, BT_HDR* p_data) {
   inc_func_call_count(__func__);
