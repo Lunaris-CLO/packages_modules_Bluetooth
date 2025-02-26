@@ -905,6 +905,11 @@ void tSMP_CB::init(uint8_t security_mode) {
       stack_config_get_interface()->get_pts_smp_failure_case());
   if (smp_cb.cert_failure)
     log::error("PTS FAILURE MODE IN EFFECT (CASE {})", smp_cb.cert_failure);
+
+  if (stack_config_get_interface()->get_pts_secure_only_mode()) {
+    log::warn("PTS Secure Only mode Enabled ");
+    init_security_mode = BTM_SEC_MODE_SC;
+  }
 }
 
 /*******************************************************************************

@@ -607,14 +607,13 @@ static void btif_a2dp_source_setup_codec_delayed(
     return;
   }
 
-  uint8_t p_codec_info[AVDT_CODEC_SIZE];
-  memset(p_codec_info, 0, AVDT_CODEC_SIZE);
+  btif_a2dp_source_cb.encoder_interface->encoder_init(
+      &peer_params, a2dp_codec_config, btif_a2dp_source_read_callback,
+      btif_a2dp_source_enqueue_callback);
 
-  //copy peer codec info to p_codec_info
-  if (!a2dp_codec_config->copyOutOtaCodecConfig(p_codec_info)) {
-    log::error("Fetching peer codec info returns fail.");
-    return;
-  }
+  // Save a local copy of the encoder_interval_ms
+  btif_a2dp_source_cb.encoder_interval_ms =
+      btif_a2dp_source_cb.encoder_interface->get_encoder_interval_ms();
 
   tBT_FLOW_SPEC flow_spec;
   memset(&flow_spec, 0x00, sizeof(flow_spec));
@@ -647,14 +646,6 @@ static void btif_a2dp_source_setup_codec_delayed(
       log::warn("Cannot send FlowSpec: status {}", status);
     }
   }
-
-  btif_a2dp_source_cb.encoder_interface->encoder_init(
-      &peer_params, a2dp_codec_config, btif_a2dp_source_read_callback,
-      btif_a2dp_source_enqueue_callback);
-
-  // Save a local copy of the encoder_interval_ms
-  btif_a2dp_source_cb.encoder_interval_ms =
-      btif_a2dp_source_cb.encoder_interface->get_encoder_interval_ms();
 
   if (bluetooth::audio::a2dp::is_hal_enabled()) {
     bluetooth::audio::a2dp::setup_codec();

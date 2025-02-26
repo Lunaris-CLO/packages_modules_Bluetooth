@@ -183,6 +183,8 @@ public class LeAudioService extends ProfileService {
     boolean mLeAudioInbandRingtoneSupportedByPlatform = true;
     boolean mBluetoothEnabled = false;
 
+    private final static Object mScanCallbackLock = new Object();
+
     /**
      * During a call that has LE Audio -> HFP handover, the HFP device that is going to connect SCO
      * after LE Audio group becomes idle
@@ -216,6 +218,7 @@ public class LeAudioService extends ProfileService {
     boolean mUnicastVolumeRetainedForBroadcastTransition = false;
     private byte[] mCachedArgs = null;
     private int mCachedOpcode = -1;
+    private int mCallAudioRoute = -1;
 
     @VisibleForTesting TbsService mTbsService;
 
@@ -542,6 +545,7 @@ public class LeAudioService extends ProfileService {
         }
 
         mInCall = false;
+        mCallAudioRoute = -1;
         mQueuedInCallValue = Optional.empty();
         if (leaudioUseAudioModeListener() && mAudioModeChangeListener != null) {
           Log.i(TAG, "leaudioUseAudioModeListener is true, calling removeOnModeChangedListener");
@@ -1890,6 +1894,14 @@ public class LeAudioService extends ProfileService {
                         + ". Currently active device is "
                         + mActiveAudioOutDevice);
 
+        if (isVoipLeaWarEnabled()) {
+            if (wasSetSinkListeningMode() && device == null
+                    && mActiveAudioInDevice != null) {
+                Log.d(TAG, "ignore null device update if broadcast created");
+                return;
+            }
+        }
+
         mAdapterService.handleActiveDeviceChange(BluetoothProfile.LE_AUDIO, device);
         sentActiveDeviceChangeIntent(device);
         notifyVolumeControlServiceAboutActiveGroup(device);
@@ -1961,12 +1973,18 @@ public class LeAudioService extends ProfileService {
                     if (mScanRetries < mMaxScanRetires) {
                         mScanRetries++;
                         Log.w(TAG, "Failed to start. Let's retry");
-                        mHandler.post(() -> startAudioServersBackgroundScan(/* retry= */ true));
+                        synchronized(mScanCallbackLock) {
+                            Log.d(TAG, " onScanFailed: Try to start background scan");
+                            mHandler.post(() -> startAudioServersBackgroundScan(/* retry= */ true));
+                        }
                     }
                     break;
                 default:
                     /* Indicate scan is no running */
-                    mScanCallback = null;
+                    synchronized(mScanCallbackLock) {
+                        Log.d(TAG, " onScanFailed: make mScanCallback null");
+                        mScanCallback = null;
+                    }
                     break;
             }
         }
@@ -3108,14 +3126,17 @@ public class LeAudioService extends ProfileService {
             return;
         }
 
-        try {
-            mAudioServersScanner.stopScan(mScanCallback);
-        } catch (IllegalStateException e) {
-            Log.e(TAG, "Fail to stop scanner, consider it stopped", e);
-        }
+        synchronized(mScanCallbackLock) {
+            try {
+                mAudioServersScanner.stopScan(mScanCallback);
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "Fail to stop scanner, consider it stopped", e);
+            }
 
-        /* Callback is the indicator for scanning being enabled */
-        mScanCallback = null;
+            /* Callback is the indicator for scanning being enabled */
+            Log.d(TAG, " stop scanning, make mScanCallback null");
+            mScanCallback = null;
+        }
     }
 
     void startAudioServersBackgroundScan(boolean retry) {
@@ -3298,7 +3319,10 @@ public class LeAudioService extends ProfileService {
                         case LeAudioStackEvent.CONNECTION_STATE_DISCONNECTING:
                         case LeAudioStackEvent.CONNECTION_STATE_DISCONNECTED:
                             deviceDescriptor.mAclConnected = false;
-                            startAudioServersBackgroundScan(/* retry= */ false);
+                            synchronized(mScanCallbackLock) {
+                                Log.d(TAG, " try to start background scan");
+                                startAudioServersBackgroundScan(/* retry= */ false);
+                            }
 
                             boolean disconnectDueToUnbond =
                                     (BluetoothDevice.BOND_NONE
@@ -4802,8 +4826,10 @@ public class LeAudioService extends ProfileService {
         } finally {
             mGroupReadLock.unlock();
         }
-
-        startAudioServersBackgroundScan(/* retry= */ false);
+        synchronized(mScanCallbackLock) {
+            Log.d(TAG, " handleBluetoothEnabled: try to start background scan");
+            startAudioServersBackgroundScan(/* retry= */ false);
+        }
     }
 
     @VisibleForTesting
@@ -4832,6 +4858,7 @@ public class LeAudioService extends ProfileService {
                         && isAudioModeChangedFromCommunicationToNormal(
                                 previousAudioMode, mCurrentAudioMode)
                         && (getActiveGroupId() == LE_AUDIO_GROUP_ID_INVALID)
+                        && mBroadcastIdDeactivatedForUnicastTransition.isPresent()
                         && !isPlaying(mBroadcastIdDeactivatedForUnicastTransition.get())) {
                     stopBroadcast(mBroadcastIdDeactivatedForUnicastTransition.get());
                     mBroadcastIdDeactivatedForUnicastTransition = Optional.empty();
@@ -4910,7 +4937,10 @@ public class LeAudioService extends ProfileService {
 
         if (mBluetoothEnabled) {
             setAuthorizationForRelatedProfiles(device, true);
-            startAudioServersBackgroundScan(/* retry= */ false);
+            synchronized(mScanCallbackLock) {
+                Log.d(TAG, " handleGroupNodeAdded: try to start background scan");
+                startAudioServersBackgroundScan(/* retry= */ false);
+            }
         }
     }
 
@@ -5360,6 +5390,17 @@ public class LeAudioService extends ProfileService {
             return null;
         }
         return getConnectedGroupLeadDevice(groupId);
+    }
+
+    public void updateCallAudioRoute(int callAudioRoute) {
+        Log.d(TAG, "updateCallAudioRoute(" + callAudioRoute + ")");
+
+        if (!mLeAudioNativeIsInitialized) {
+            Log.e(TAG, "Le Audio not initialized properly.");
+            return;
+        }
+        mCallAudioRoute = callAudioRoute;
+        mNativeInterface.updateCallAudioRoute(callAudioRoute);
     }
 
     /**

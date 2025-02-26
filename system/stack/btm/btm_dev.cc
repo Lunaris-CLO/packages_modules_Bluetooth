@@ -727,7 +727,8 @@ const tBLE_BD_ADDR BTM_Sec_GetAddressWithType(const RawAddress& bd_addr) {
     };
   }
 
-  if (BTM_BLE_IS_RANDOM_STATIC_BDA(bd_addr)) {
+  if ((p_dev_rec->ble.AddressType() == BLE_ADDR_RANDOM) &&
+      BTM_BLE_IS_RANDOM_STATIC_BDA(bd_addr)) {
     log::info(
         "{}, is using random static address & the address type is 0x{:02x}",
         bd_addr, p_dev_rec->ble.AddressType());

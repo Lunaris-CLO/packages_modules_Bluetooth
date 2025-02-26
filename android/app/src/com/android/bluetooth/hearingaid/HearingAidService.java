@@ -49,6 +49,8 @@ import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.AudioRoutingManager;
 import com.android.bluetooth.btservice.MetricsLogger;
 import com.android.bluetooth.btservice.ProfileService;
+import com.android.bluetooth.btservice.ServiceFactory;
+import com.android.bluetooth.le_audio.LeAudioService;
 import com.android.bluetooth.btservice.storage.DatabaseManager;
 import com.android.bluetooth.flags.Flags;
 import com.android.internal.annotations.VisibleForTesting;
@@ -76,6 +78,8 @@ public class HearingAidService extends ProfileService {
     private DatabaseManager mDatabaseManager;
     private HandlerThread mStateMachinesThread;
     private BluetoothDevice mActiveDevice;
+
+    ServiceFactory mFactory = new ServiceFactory();
 
     @VisibleForTesting HearingAidNativeInterface mHearingAidNativeInterface;
     @VisibleForTesting AudioManager mAudioManager;
@@ -603,6 +607,13 @@ public class HearingAidService extends ProfileService {
                 Log.e(TAG, "setActiveDevice(" + device + "): failed because device not connected");
                 return false;
             }
+
+            LeAudioService leAudioService = mFactory.getLeAudioService();
+            if (leAudioService != null) {
+                Log.i(TAG, "Make sure there is no broadcast active.");
+                leAudioService.setInactiveForBroadcast();
+            }
+
             Long deviceHiSyncId =
                     mDeviceHiSyncIdMap.getOrDefault(device, BluetoothHearingAid.HI_SYNC_ID_INVALID);
             if (deviceHiSyncId != mActiveDeviceHiSyncId) {

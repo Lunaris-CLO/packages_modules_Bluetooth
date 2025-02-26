@@ -2471,21 +2471,39 @@ public class BassClientService extends ProfileService {
                             getSyncHandleForBroadcastId(sourceMetadata.getBroadcastId())))) {
                 log("Adding inactive source: " + sourceDevice);
                 int broadcastId = sourceMetadata.getBroadcastId();
-                if (broadcastId != BassConstants.INVALID_BROADCAST_ID
-                        && getCachedBroadcast(broadcastId) != null) {
-                    // If the source has been synced before, try to re-sync
-                    // with the source by previously cached scan result
-                    addSelectSourceRequest(getCachedBroadcast(broadcastId), true);
-                    synchronized (mPendingSourcesToAdd) {
-                        mPendingSourcesToAdd.add(
-                                new AddSourceData(sink, sourceMetadata, isGroupOp));
-                    }
-                } else if (broadcastId != BassConstants.INVALID_BROADCAST_ID
-                        && isSearchInProgress()) {
-                    log("AddSource: pending for search broadcast: " + broadcastId);
-                    synchronized (mPendingSourcesToAdd) {
-                        mPendingSourcesToAdd.add(
-                                new AddSourceData(sink, sourceMetadata, isGroupOp));
+                if (broadcastId != BassConstants.INVALID_BROADCAST_ID) {
+                    if (isSearchInProgress()) {
+                        log("AddSource: pending for search broadcast: " + broadcastId);
+                        synchronized (mPendingSourcesToAdd) {
+                            mPendingSourcesToAdd.add(
+                                    new AddSourceData(sink, sourceMetadata, isGroupOp));
+                        }
+                    } else {
+                        ScanResult cachedSource = getCachedBroadcast(broadcastId);
+                        if (cachedSource == null) {
+                            log("Cannot find scan result, fake a scan result for QR scan case");
+                            int sid = sourceMetadata.getSourceAdvertisingSid();
+                            if (sid == -1) {
+                                sid = 0; // advertising set id 0 by default
+                            }
+                            BluetoothDevice source = sourceMetadata.getSourceDevice();
+                            int addressType = sourceMetadata.getSourceAddressType();
+                            int bId = sourceMetadata.getBroadcastId();
+                            byte[] advData = {6, 0x16, 0x52, 0x18, (byte)(bId & 0xFF),
+                                    (byte)((bId >> 8) & 0xFF), (byte)((bId >> 16) & 0xFF)};
+                            ScanRecord record = ScanRecord.parseFromBytes(advData);
+                            cachedSource = new ScanResult(source, addressType, 0x1 /* eventType */,
+                                    0x1 /* primaryPhy */, 0x2 /* secondaryPhy */, sid, 0 /* txPower */,
+                                    0 /* rssi */, 0 /* periodicAdvertisingInterval */, record,
+                                    0 /* timestampNanos */);
+                        }
+                        // If the source has been synced before, try to re-sync
+                        // with the source by previously cached scan result
+                        addSelectSourceRequest(cachedSource, true);
+                        synchronized (mPendingSourcesToAdd) {
+                            mPendingSourcesToAdd.add(
+                                    new AddSourceData(sink, sourceMetadata, isGroupOp));
+                        }
                     }
                 } else {
                     log("AddSource: broadcast not cached or invalid, broadcastId: " + broadcastId);

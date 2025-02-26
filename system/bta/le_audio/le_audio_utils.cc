@@ -54,6 +54,7 @@ LeAudioContextType AudioContentToLeAudioContext(
   switch (usage) {
     case AUDIO_USAGE_MEDIA:
       return LeAudioContextType::MEDIA;
+    case AUDIO_USAGE_ASSISTANCE_ACCESSIBILITY:
     case AUDIO_USAGE_ASSISTANT:
       return LeAudioContextType::VOICEASSISTANTS;
     case AUDIO_USAGE_VOICE_COMMUNICATION:

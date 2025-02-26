@@ -41,6 +41,8 @@
 namespace bluetooth {
 namespace hci {
 
+struct monitor_command;
+
 class HciLayer : public Module, public HciInterface {
   // LINT.IfChange
  public:
@@ -121,6 +123,8 @@ class HciLayer : public Module, public HciInterface {
   static constexpr std::chrono::milliseconds kHciTimeoutMs = std::chrono::milliseconds(2000);
   static constexpr std::chrono::milliseconds kHciTimeoutRestartMs = std::chrono::milliseconds(5000);
 
+
+
   static const ModuleFactory Factory;
 
  protected:
@@ -150,8 +154,10 @@ class HciLayer : public Module, public HciInterface {
   struct hal_callbacks;
   impl* impl_;
   hal_callbacks* hal_callbacks_;
+  monitor_command* cmd_stats;
 
   std::mutex callback_handlers_guard_;
+  std::mutex monitor_cmd_stats;
   void on_connection_request(EventView event_view);
   void on_disconnection_complete(EventView event_view);
   void on_read_remote_version_complete(EventView event_view);

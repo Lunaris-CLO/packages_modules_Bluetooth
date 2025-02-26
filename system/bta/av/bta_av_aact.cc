@@ -3514,7 +3514,8 @@ void bta_av_qti_offload_req(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
       return;
       break;
   }
-  //offload_start.mtu = offload_start.mtu + AVDT_MEDIA_HDR_SIZE;
+  offload_start.mtu = offload_start.mtu + AVDT_MEDIA_HDR_SIZE;
+  log::info("Adding AVDTP media Header in stream_mtu : {}", offload_start.mtu);
 
   uint8_t *p_param = param;
 

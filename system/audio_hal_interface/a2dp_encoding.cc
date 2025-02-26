@@ -218,12 +218,12 @@ void set_remote_delay(uint16_t delay_report) {
   } else if (HalVersionManager::GetHalTransport() ==
       BluetoothAudioHalTransport::AIDL) {
     aidl::a2dp::set_remote_delay(delay_report);
+    bluetooth::audio::a2dp::setup_codec();
   } else if (HalVersionManager::GetHalTransport() ==
       BluetoothAudioHalTransport::QTI_HIDL) {
     LOG(INFO) << __func__ <<": qti_hidl set_remote_delay";
     qti_hidl::a2dp::set_remote_delay(delay_report);
   }
-  bluetooth::audio::a2dp::setup_codec();
   return;
 }
 

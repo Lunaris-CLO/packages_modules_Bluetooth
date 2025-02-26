@@ -519,12 +519,15 @@ uint8_t LeAudioDeviceGroup::GetPacking(void) const {
   if (osi_property_get_bool("persist.vendor.btstack.sequential_packing_enable", false)) {
     packing_type = bluetooth::hci::kIsoCigPackingSequential;
     log::warn("Switching to sequential packing type ");
+    return packing_type;
   }
 
   if (!stream_conf.conf) {
-    log::error("No stream configuration has been set.");
+    log::warn("No stream configuration has been set, return interleaved");
     return packing_type;
   }
+
+  log::warn("No stream configuration has been set, return default interleaved");
   return stream_conf.conf->packing;
 }
 
@@ -836,7 +839,6 @@ LeAudioDeviceGroup::GetAudioSetConfigurationRequirements(
       if (dev_locations.none()) {
         log::warn("Device {} has no locations for direction: {}",
                   device->address_, (int)direction);
-        continue;
       }
 
       has_location.get(direction) = true;
@@ -947,9 +949,9 @@ LeAudioDeviceGroup::GetLatestAvailableContexts() const {
 
 bool LeAudioDeviceGroup::ReloadAudioLocations(void) {
   AudioLocations updated_snk_audio_locations_ =
-      codec_spec_conf::kLeAudioLocationNotAllowed;
+      codec_spec_conf::kLeAudioLocationMonoAudio;
   AudioLocations updated_src_audio_locations_ =
-      codec_spec_conf::kLeAudioLocationNotAllowed;
+      codec_spec_conf::kLeAudioLocationMonoAudio;
 
   for (const auto& device : leAudioDevices_) {
     if (device.expired() || (device.lock().get()->GetConnectionState() !=
@@ -1061,10 +1063,11 @@ types::LeAudioConfigurationStrategy LeAudioDeviceGroup::GetGroupSinkStrategy()
       }
 
       log::debug("audio location 0x{:04x}", snk_audio_locations_.to_ulong());
-      if ((!(snk_audio_locations_.to_ulong() &
+      if (!(snk_audio_locations_.to_ulong() &
             codec_spec_conf::kLeAudioLocationAnyLeft) ||
           !(snk_audio_locations_.to_ulong() &
-            codec_spec_conf::kLeAudioLocationAnyRight)) && !mCapNoAudioLocPts) {
+            codec_spec_conf::kLeAudioLocationAnyRight) ||
+          snk_audio_locations_.none()) {
         log::debug("startgy set to MONO_ONE_CIS_PER_DEVICE");
         return types::LeAudioConfigurationStrategy::MONO_ONE_CIS_PER_DEVICE;
       }
@@ -1389,17 +1392,7 @@ bool CheckIfStrategySupported(types::LeAudioConfigurationStrategy strategy,
 
   switch (strategy) {
     case types::LeAudioConfigurationStrategy::MONO_ONE_CIS_PER_DEVICE:
-      //for no audio location use cases in BAP. No ch count, no pacs etc..
-      /*BAP/UCL/STR/BV-554-C
-       * BAP/UCL/STR/BV-555-C
-       * BAP/UCL/STR/BV-558-C
-       * BAP/UCL/STR/BV-559-C
-       */
-      if (osi_property_get_bool("persist.bluetooth.bap.no.pacs.pts", false)) {
-         return true;
-      } else {
-         return audio_locations.any();
-      }
+      return true;
     case types::LeAudioConfigurationStrategy::STEREO_TWO_CISES_PER_DEVICE:
       if ((audio_locations.to_ulong() &
            codec_spec_conf::kLeAudioLocationAnyLeft) &&

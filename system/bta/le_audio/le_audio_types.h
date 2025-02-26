@@ -166,7 +166,7 @@ constexpr uint8_t kLeAudioCodecFrameDur10000us = 0x01;
 constexpr uint8_t kLeAudioCodecFrameDur15000us = 0x02;
 
 /* Audio Allocations */
-constexpr uint32_t kLeAudioLocationNotAllowed = 0x00000000;
+constexpr uint32_t kLeAudioLocationMonoAudio = 0x00000000;
 constexpr uint32_t kLeAudioLocationFrontLeft = 0x00000001;
 constexpr uint32_t kLeAudioLocationFrontRight = 0x00000002;
 constexpr uint32_t kLeAudioLocationFrontCenter = 0x00000004;

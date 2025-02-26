@@ -1050,14 +1050,14 @@ void Device::GetElementAttributesResponse(
       if (info.attributes.find(attribute) != info.attributes.end()) {
         if (info.attributes.find(attribute)->value().empty()) {
           log::verbose("empty attribute found");
-          response->AddAttributeEntry(attribute, "unavailable");
+          response->AddAttributeEntry(attribute, std::string());
         } else {
           response->AddAttributeEntry(*info.attributes.find(attribute));
         }
       } else {
         //we send a response even for attributes that we don't have a value for.
         log::verbose("attribute not found");
-        response->AddAttributeEntry(attribute, "unavailable");
+        response->AddAttributeEntry(attribute, std::string());
       }
     }
   } else {  // zero attributes requested which means all attributes requested
@@ -1074,7 +1074,7 @@ void Device::GetElementAttributesResponse(
         log::verbose("requested attribute: {}", AttributeText(attribute));
         if (info.attributes.find(attribute)->value().empty()) {
           log::verbose("empty attribute found");
-          response->AddAttributeEntry(attribute, "unavailable");
+          response->AddAttributeEntry(attribute, std::string());
         } else {
           response->AddAttributeEntry(*info.attributes.find(attribute));
         }
@@ -1082,7 +1082,7 @@ void Device::GetElementAttributesResponse(
         // If all attributes were requested, we send a response even for attributes that we don't
         // have a value for.
         log::verbose("attribute not found");
-        response->AddAttributeEntry(attribute, "unavailable");
+        response->AddAttributeEntry(attribute, std::string());
       }
     }
   }

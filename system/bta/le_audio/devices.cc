@@ -287,6 +287,11 @@ bool LeAudioDevice::ConfigureAses(
                  auto config = cfg.codec.params.GetAsCoreCodecConfig();
                  if (!config.audio_channel_allocation.has_value()) return true;
 
+                 // No locations bits means mono audio
+                 if (audio_locations.none()) {
+                   return true;
+                 }
+
                  // Filter-out not matching audio locations
                  return (cfg.codec.params.GetAsCoreCodecConfig()
                              .audio_channel_allocation.value() &

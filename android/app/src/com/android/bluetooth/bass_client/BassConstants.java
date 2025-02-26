@@ -82,6 +82,6 @@ public class BassConstants {
     // BIS_Sync parameter value
     public static final long BIS_SYNC_NOT_SYNC_TO_BIS = 0x00000000L;
     public static final long BIS_SYNC_FAILED_SYNC_TO_BIG = 0xFFFFFFFFL;
-    // 100 ms time out for removing source
-    public static final int REMOVE_SOURCE_TIMEOUT_MS = 100;
+    // 1000 ms time out for removing source
+    public static final int REMOVE_SOURCE_TIMEOUT_MS = 1000;
 }

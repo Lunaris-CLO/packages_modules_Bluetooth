@@ -315,13 +315,26 @@ void l2cble_process_sig_cmd(tL2C_LCB* p_lcb, uint8_t* p, uint16_t pkt_len) {
         } else {
           l2cu_send_peer_ble_par_rsp(p_lcb, L2CAP_CFG_OK, id);
 
-          p_lcb->min_interval = min_interval;
-          p_lcb->max_interval = max_interval;
-          p_lcb->latency = latency;
-          p_lcb->timeout = timeout;
-          p_lcb->conn_update_mask |= L2C_BLE_NEW_CONN_PARAM;
+          log::warn(
+              "curr param: min_conn_int={} max_conn_int={} "
+              "peripheral_latency={} supervision_tout={}",
+              p_lcb->min_interval, p_lcb->max_interval, p_lcb->latency,
+              p_lcb->timeout);
 
-          l2cble_start_conn_update(p_lcb);
+          p_lcb->min_interval = min_interval;
+          if ((p_lcb->max_interval == max_interval) &&
+              (p_lcb->latency == latency) && (p_lcb->timeout == timeout)) {
+            log::warn(
+                "Ignore peripheral connection update, same parameters are "
+                "currently being used");
+          } else {
+            p_lcb->max_interval = max_interval;
+            p_lcb->latency = latency;
+            p_lcb->timeout = timeout;
+            p_lcb->conn_update_mask |= L2C_BLE_NEW_CONN_PARAM;
+
+            l2cble_start_conn_update(p_lcb);
+          }
         }
       } else
         l2cu_send_peer_cmd_reject(p_lcb, L2CAP_CMD_REJ_NOT_UNDERSTOOD, id, 0,

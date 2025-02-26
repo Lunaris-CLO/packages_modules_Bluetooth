@@ -1539,9 +1539,9 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
          * In such an event, there is need to notify upper layer about state
          * from here.
          */
-        cancel_watchdog_if_needed(group->group_id_);
-
         if (current_group_state == AseState::BTA_LE_AUDIO_ASE_STATE_IDLE) {
+          cancel_watchdog_if_needed(group->group_id_);
+
           log::info(
               "Cises disconnected for group {}, we are good in Idle state.",
               group->group_id_);
@@ -1550,6 +1550,7 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
                                                    GroupStreamStatus::IDLE);
         } else if (current_group_state ==
                    AseState::BTA_LE_AUDIO_ASE_STATE_CODEC_CONFIGURED) {
+          cancel_watchdog_if_needed(group->group_id_);
           auto reconfig = group->IsPendingConfiguration();
           log::info(
               "Cises disconnected for group: {}, we are good in Configured "
@@ -3236,6 +3237,9 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
 
     if (!leAudioDevice->IsMetadataChanged(context_types, ccid_lists)) return;
 
+    std::vector<uint16_t> conn_handles;
+    AudioContexts ctx_type;
+
     /* Request server to update ASEs with new metadata */
     for (struct ase* ase = leAudioDevice->GetFirstActiveAse(); ase != nullptr;
          ase = leAudioDevice->GetNextActiveAse(ase)) {
@@ -3287,6 +3291,8 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
       conf.ase_id = ase->id;
       conf.metadata = ase->metadata;
       confs.push_back(conf);
+      conn_handles.push_back(ase->cis_conn_hdl);
+      ctx_type = directional_audio_context;
 
       extra_stream << "meta: "
                    << base::HexEncode(conf.metadata.data(),
@@ -3299,6 +3305,10 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
       bluetooth::le_audio::client_parser::ascs::PrepareAseCtpUpdateMetadata(
           confs, value);
       WriteToControlPoint(leAudioDevice, value);
+
+      send_vs_cmd(static_cast<uint16_t>(ctx_type.value()),
+          leAudioDevice->group_id_, conn_handles.size(), conn_handles,
+          leAudioDevice->isLeXDevice());
 
       log::info("group_id: {}, {}", leAudioDevice->group_id_,
                 leAudioDevice->address_);

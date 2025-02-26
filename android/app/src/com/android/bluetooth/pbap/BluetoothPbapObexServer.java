@@ -1506,6 +1506,15 @@ public class BluetoothPbapObexServer extends ServerRequestHandler {
 
         int requestSize =
                 pbSize >= appParamValue.maxListCount ? appParamValue.maxListCount : pbSize;
+        // Limit the number of call log to CALLLOG_NUM_LIMIT
+        if ((appParamValue.needTag != BluetoothPbapObexServer.ContentType.PHONEBOOK)
+                && (appParamValue.needTag != BluetoothPbapObexServer.ContentType.FAVORITES)
+                && (appParamValue.needTag != BluetoothPbapObexServer.ContentType.SIM_PHONEBOOK)) {
+            if (requestSize > CALLLOG_NUM_LIMIT) {
+                requestSize = CALLLOG_NUM_LIMIT;
+            }
+        }
+
         /**
          * startIndex (resp., lastIndex) corresponds to the index of the first (resp., last) vcard
          * entry in the phonebook object. PBAP v1.2.3: only pb starts indexing at 0.vcf (owner
@@ -1533,15 +1542,6 @@ public class BluetoothPbapObexServer extends ServerRequestHandler {
         }
         if (endPoint > lastIndex) {
             endPoint = lastIndex;
-        }
-
-        // Limit the number of call log to CALLLOG_NUM_LIMIT
-        if ((appParamValue.needTag != BluetoothPbapObexServer.ContentType.PHONEBOOK)
-                && (appParamValue.needTag != BluetoothPbapObexServer.ContentType.FAVORITES)
-                && (appParamValue.needTag != BluetoothPbapObexServer.ContentType.SIM_PHONEBOOK)) {
-            if (requestSize > CALLLOG_NUM_LIMIT) {
-                requestSize = CALLLOG_NUM_LIMIT;
-            }
         }
 
         Log.d(

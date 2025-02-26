@@ -874,6 +874,7 @@ public class BassClientStateMachine extends StateMachine {
                     msg.arg2 = BluetoothLeBroadcastReceiveState.PA_SYNC_STATE_IDLE;
                     msg.obj = metaDataToUpdate;
                     sendMessage(msg);
+                    return;
                 }
             }
             Message m = obtainMessage(BassClientStateMachine.REMOVE_BCAST_SOURCE);
@@ -1079,6 +1080,14 @@ public class BassClientStateMachine extends StateMachine {
             mSetBroadcastPINMetadata = null;
             checkAndUpdateBroadcastCode(recvState);
             processPASyncState(recvState);
+            if (mBluetoothLeBroadcastReceiveStates.size() == mNumOfBroadcastReceiverStates) {
+                log("The last receive state");
+                if (mLastConnectionState != BluetoothProfile.STATE_CONNECTED) {
+                    broadcastConnectionState(
+                            mDevice, mLastConnectionState, BluetoothProfile.STATE_CONNECTED);
+                    mLastConnectionState = BluetoothProfile.STATE_CONNECTED;
+                }
+            }
         } else {
             log("Updated receiver state: " + recvState);
             mBluetoothLeBroadcastReceiveStates.replace(characteristic.getInstanceId(), recvState);
@@ -1929,10 +1938,6 @@ public class BassClientStateMachine extends StateMachine {
                             + "): "
                             + messageWhatToString(getCurrentMessage().what));
             removeDeferredMessages(CONNECT);
-            if (mLastConnectionState != BluetoothProfile.STATE_CONNECTED) {
-                broadcastConnectionState(
-                        mDevice, mLastConnectionState, BluetoothProfile.STATE_CONNECTED);
-            }
         }
 
         @Override
@@ -1942,7 +1947,6 @@ public class BassClientStateMachine extends StateMachine {
                             + mDevice
                             + "): "
                             + messageWhatToString(getCurrentMessage().what));
-            mLastConnectionState = BluetoothProfile.STATE_CONNECTED;
         }
 
         private void writeBassControlPoint(byte[] value) {
@@ -2093,12 +2097,29 @@ public class BassClientStateMachine extends StateMachine {
                                                         metaData.getBroadcastId())))) {
                             log("Adding inactive source: " + sourceDevice);
                             int broadcastId = metaData.getBroadcastId();
-                            if (broadcastId != BassConstants.INVALID_BROADCAST_ID
-                                    && mService.getCachedBroadcast(broadcastId) != null) {
+                            ScanResult cachedSource = mService.getCachedBroadcast(broadcastId);
+                            if (broadcastId != BassConstants.INVALID_BROADCAST_ID) {
+                                if (cachedSource == null) {
+                                    log("Cannot find scan result, fake a scan result for QR scan case");
+                                    int sid = metaData.getSourceAdvertisingSid();
+                                    if (sid == -1) {
+                                        sid = 0; // advertising set id 0 by default
+                                    }
+                                    BluetoothDevice source = metaData.getSourceDevice();
+                                    int addressType = metaData.getSourceAddressType();
+                                    int bId = metaData.getBroadcastId();
+                                    byte[] advData = {6, 0x16, 0x52, 0x18, (byte)(bId & 0xFF),
+                                            (byte)((bId >> 8) & 0xFF), (byte)((bId >> 16) & 0xFF)};
+                                    ScanRecord record = ScanRecord.parseFromBytes(advData);
+                                    cachedSource = new ScanResult(source, addressType, 0x1 /* eventType */,
+                                            0x1 /* primaryPhy */, 0x2 /* secondaryPhy */, sid, 0 /* txPower */,
+                                            0 /* rssi */, 0 /* periodicAdvertisingInterval */, record,
+                                            0 /* timestampNanos */);
+                                }
                                 // If the source has been synced before, try to re-sync(auto/true)
                                 // with the source by previously cached scan result
                                 Message msg = obtainMessage(SELECT_BCAST_SOURCE);
-                                msg.obj = mService.getCachedBroadcast(broadcastId);
+                                msg.obj = cachedSource;
                                 msg.arg1 = BassConstants.AUTO;
                                 sendMessage(msg);
                                 mPendingSourceToAdd = metaData;
