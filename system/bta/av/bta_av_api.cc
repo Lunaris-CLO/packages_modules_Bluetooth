@@ -537,6 +537,28 @@ void BTA_AvOpenRc(tBTA_AV_HNDL handle) {
 
 /*******************************************************************************
  *
+ * Function         BTA_AvCancelAVRCAlarm
+ *
+ * Description      Cancel AVRCP alarm with specified device and handle
+ *
+ * Returns          void
+ *
+ ******************************************************************************/
+
+void BTA_AvCancelAVRCAlarm(const RawAddress& bd_addr, uint8_t rc_handle) {
+  log::info(" rc_handle:0x{:x}, bd_addr: {}", rc_handle, bd_addr);
+  tBTA_AV_API_CANCEL_AVRC_ALARM* p_buf =
+          (tBTA_AV_API_CANCEL_AVRC_ALARM*)osi_malloc(sizeof(tBTA_AV_API_CANCEL_AVRC_ALARM));
+
+  p_buf->hdr.event = BTA_AV_API_RC_CANCEL_ALARM;
+  p_buf->hdr.layer_specific = rc_handle;
+  p_buf->peer_addr = bd_addr;
+
+  bta_sys_sendmsg(p_buf);
+}
+
+/*******************************************************************************
+ *
  * Function         BTA_AvCloseRc
  *
  * Description      Close an AVRCP connection

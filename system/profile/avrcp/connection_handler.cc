@@ -36,6 +36,7 @@
 #include "stack/include/bt_hdr.h"
 #include "stack/include/bt_uuid16.h"
 #include "types/raw_address.h"
+#include "bta/av/bta_av_int.h"
 
 extern bool btif_av_peer_is_connected_sink(const RawAddress& peer_address);
 extern bool btif_av_peer_is_connected_source(const RawAddress& peer_address);
@@ -249,7 +250,7 @@ void ConnectionHandler::InitiatorControlCb(uint8_t handle, uint8_t event,
   switch (event) {
     case AVRC_OPEN_IND_EVT: {
       log::info("Connection Opened Event");
-
+      BTA_AvCancelAVRCAlarm(*peer_addr, handle);
       const auto& feature_iter = feature_map_.find(*peer_addr);
       if (feature_iter == feature_map_.end()) {
         log::error(
@@ -344,6 +345,7 @@ void ConnectionHandler::AcceptorControlCb(uint8_t handle, uint8_t event,
       if (peer_addr == NULL) {
         return;
       }
+      BTA_AvCancelAVRCAlarm(*peer_addr, handle);
       if (btif_av_src_sink_coexist_enabled() &&
           btif_av_peer_is_connected_source(*peer_addr)) {
         log::warn("peer is src, close new avrcp cback");

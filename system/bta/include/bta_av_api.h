@@ -647,6 +647,17 @@ void BTA_AvOpenRc(tBTA_AV_HNDL handle);
 
 /*******************************************************************************
  *
+ * Function         BTA_AvCancelAVRCAlarm
+ *
+ * Description      Cancel AVRCP alarm with specified device and handle
+ *
+ * Returns          void
+ *
+ ******************************************************************************/
+void BTA_AvCancelAVRCAlarm(const RawAddress& bdaddr, uint8_t handle);
+
+/*******************************************************************************
+ *
  * Function         BTA_AvCloseRc
  *
  * Description      Close an AVRCP connection

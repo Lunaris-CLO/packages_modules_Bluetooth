@@ -47,6 +47,7 @@ struct get_a2dp_configuration get_a2dp_configuration;
 struct init init;
 struct is_hal_enabled is_hal_enabled;
 struct is_hal_offloading is_hal_offloading;
+struct is_offload_session_unknown is_offload_session_unknown;
 struct is_opus_supported is_opus_supported;
 struct parse_a2dp_configuration parse_a2dp_configuration;
 struct read read;
@@ -76,6 +77,7 @@ std::optional<a2dp_configuration> get_a2dp_configuration::return_value =
 bool init::return_value = false;
 bool is_hal_enabled::return_value = false;
 bool is_hal_offloading::return_value = false;
+bool is_offload_session_unknown::return_value = false;
 bool is_opus_supported::return_value = false;
 tA2DP_STATUS parse_a2dp_configuration::return_value = A2DP_SUCCESS;
 size_t read::return_value = 0;
@@ -141,6 +143,10 @@ bool is_hal_enabled() {
 bool is_hal_offloading() {
   inc_func_call_count(__func__);
   return test::mock::audio_hal_interface_a2dp_encoding::is_hal_offloading();
+}
+bool is_offload_session_unknown() {
+  inc_func_call_count(__func__);
+  return test::mock::audio_hal_interface_a2dp_encoding::is_offload_session_unknown();
 }
 bool is_opus_supported() {
   inc_func_call_count(__func__);

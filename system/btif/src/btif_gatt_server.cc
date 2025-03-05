@@ -230,8 +230,12 @@ static void btapp_gatts_handle_cback(uint16_t event, char* p_param) {
 
     case BTA_GATTS_OPEN_EVT:
     case BTA_GATTS_CANCEL_OPEN_EVT:
-    case BTA_GATTS_CLOSE_EVT:
       log::info("Empty event ({})!", event);
+      break;
+
+    case BTA_GATTS_CLOSE_EVT:
+      HAL_CBACK(bt_gatt_callbacks, server->connection_cb, p_data->conn.conn_id,
+                                   p_data->conn.server_if, false, p_data->conn.remote_bda);
       break;
 
     case BTA_GATTS_PHY_UPDATE_EVT:

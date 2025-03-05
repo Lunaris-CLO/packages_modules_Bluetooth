@@ -4948,7 +4948,7 @@ struct CsOptionalCsSyncPhysSupported {
 }
 
 struct CsOptionalSubfeaturesSupported {
-  companion_signal : 1,
+  _reserved_ : 1,
   frequency_actuation_error : 1,
   channel_selection_algorithm : 1,
   phase_based_ranging : 1,
@@ -5143,7 +5143,7 @@ enum CsRole : 8 {
 }
 
 enum CsConfigRttType : 8 {
-  RTT_AA_COARSE = 0x00,
+  RTT_AA_ONLY = 0x00,
   RTT_WITH_32_BIT_SOUNDING_SEQUENCE = 0x01,
   RTT_WITH_96_BIT_SOUNDING_SEQUENCE = 0x02,
   RTT_WITH_32_BIT_RANDOM_SEQUENCE = 0x03,
@@ -6967,8 +6967,8 @@ struct LeCsMode3InitatorData {
   packet_quality : 8,
   packet_nadm : CsPacketNadm,
   packet_rssi : 8,
-  packet_antenna : 8,
   toa_tod_initiator : 16,
+  packet_antenna : 8,
   antenna_permutation_index : 8,
   tone_data : LeCsToneDataWithQuality[],
 }
@@ -6978,10 +6978,10 @@ struct LeCsMode3InitatorDataWithPacketPct {
   packet_quality : 8,
   packet_nadm : CsPacketNadm,
   packet_rssi : 8,
+  toa_tod_initiator : 16,
   packet_antenna : 8,
   packet_pct1 : LeCsToneData,
   packet_pct2 : LeCsToneData,
-  toa_tod_initiator : 16,
   antenna_permutation_index : 8,
   tone_data : LeCsToneDataWithQuality[],
 }
@@ -6991,8 +6991,8 @@ struct LeCsMode3ReflectorData {
   packet_quality : 8,
   packet_nadm : CsPacketNadm,
   packet_rssi : 8,
-  packet_antenna : 8,
   tod_toa_reflector : 16,
+  packet_antenna : 8,
   antenna_permutation_index : 8,
   tone_data : LeCsToneDataWithQuality[],
 }
@@ -7002,10 +7002,10 @@ struct LeCsMode3ReflectorDataWithPacketPct {
   packet_quality : 8,
   packet_nadm : CsPacketNadm,
   packet_rssi : 8,
+  tod_toa_reflector : 16,
   packet_antenna : 8,
   packet_pct1 : LeCsToneData,
   packet_pct2 : LeCsToneData,
-  tod_toa_reflector : 16,
   antenna_permutation_index : 8,
   tone_data : LeCsToneDataWithQuality[],
 }

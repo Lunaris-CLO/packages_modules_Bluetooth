@@ -404,7 +404,7 @@ static void event_shut_down_stack(ProfileStopCallback stopProfiles) {
   l2c_free();
   get_btm_client_interface().lifecycle.btm_ble_free();
 
-  get_btm_client_interface().lifecycle.btm_free();
+  do_in_main_thread(FROM_HERE, base::BindOnce(get_btm_client_interface().lifecycle.btm_free));
 
   hack_future = future_new();
   do_in_jni_thread(base::BindOnce(event_signal_stack_down, nullptr));

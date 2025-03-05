@@ -680,6 +680,15 @@ bool is_hal_offloading() {
          SessionType::A2DP_HARDWARE_OFFLOAD_ENCODING_DATAPATH;
 }
 
+bool is_hal_2_0_offloading_session_unknown() {
+    if (!is_hal_enabled()) {
+     return false;
+   }
+
+  return active_hal_interface->GetTransportInstance()->GetSessionType() ==
+         SessionType::UNKNOWN;
+}
+
 // Opens the HAL client interface of the specified session type and check
 // that is is valid. Returns nullptr if the client interface did not open
 // properly.

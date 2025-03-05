@@ -1263,6 +1263,7 @@ static void bta_av_non_state_machine_event(uint16_t event,
 
 static void bta_av_better_state_machine(tBTA_AV_CB* p_cb, uint16_t event,
                                         tBTA_AV_DATA* p_data) {
+  log::verbose(" event: {}", event);
   switch (p_cb->state) {
     case BTA_AV_INIT_ST:
       switch (event) {
@@ -1278,6 +1279,9 @@ static void bta_av_better_state_machine(tBTA_AV_CB* p_cb, uint16_t event,
           break;
         case BTA_AV_AVRC_MSG_EVT:
           bta_av_rc_free_browse_msg(p_cb, p_data);
+          break;
+        case BTA_AV_API_RC_CANCEL_ALARM:
+          bta_av_cancel_avrc_alarm(p_cb, p_data);
           break;
       }
       break;
@@ -1311,6 +1315,9 @@ static void bta_av_better_state_machine(tBTA_AV_CB* p_cb, uint16_t event,
         case BTA_AV_AVRC_NONE_EVT:
           p_cb->state = BTA_AV_INIT_ST;
           break;
+        case BTA_AV_API_RC_CANCEL_ALARM:
+          bta_av_cancel_avrc_alarm(p_cb, p_data);
+          break;
       }
       break;
   }
@@ -1335,6 +1342,7 @@ void bta_av_sm_execute(tBTA_AV_CB* p_cb, uint16_t event, tBTA_AV_DATA* p_data) {
  ******************************************************************************/
 bool bta_av_hdl_event(const BT_HDR_RIGID* p_msg) {
   if (p_msg->event > BTA_AV_LAST_EVT) {
+    log::verbose("Event is unknown, return");
     return true; /* to free p_msg */
   }
   if (p_msg->event >= BTA_AV_FIRST_NSM_EVT) {
@@ -1519,6 +1527,8 @@ const char* bta_av_evt_code(uint16_t evt_code) {
       return "SET_CODEC_MODE";
     case BTA_AV_UPDATE_APTX_DATA_EVT:
       return "UPDATE_APTX_DATA";
+    case BTA_AV_API_RC_CANCEL_ALARM:
+      return "API_RC_CANCEL_ALARM";
     default:
       return "unknown";
   }

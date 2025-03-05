@@ -168,6 +168,7 @@ cc_defaults {
         "libbluetooth_l2cap_pdl",
         "libbluetooth_ras_pdl",
         "libbluetooth_smp_pdl",
+        "libcutils",
     ],
     static_libs: [
         "libaconfig_storage_read_api_cc",

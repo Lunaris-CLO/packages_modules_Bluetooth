@@ -47,6 +47,7 @@ struct BTA_AvMetaRsp BTA_AvMetaRsp;
 struct BTA_AvOffloadStart BTA_AvOffloadStart;
 struct BTA_AvOpen BTA_AvOpen;
 struct BTA_AvOpenRc BTA_AvOpenRc;
+struct BTA_AvCancelAVRCAlarm BTA_AvCancelAVRCAlarm;
 struct BTA_AvProtectReq BTA_AvProtectReq;
 struct BTA_AvProtectRsp BTA_AvProtectRsp;
 struct BTA_AvReconfig BTA_AvReconfig;
@@ -120,6 +121,10 @@ void BTA_AvOpen(const RawAddress& bd_addr, tBTA_AV_HNDL handle, bool use_rc,
 void BTA_AvOpenRc(tBTA_AV_HNDL handle) {
   inc_func_call_count(__func__);
   test::mock::bta_av_api::BTA_AvOpenRc(handle);
+}
+void BTA_AvCancelAVRCAlarm(const RawAddress& bd_addr, uint8_t handle) {
+  inc_func_call_count(__func__);
+  test::mock::bta_av_api::BTA_AvCancelAVRCAlarm(bd_addr, handle);
 }
 void BTA_AvProtectReq(tBTA_AV_HNDL hndl, uint8_t* p_data, uint16_t len) {
   inc_func_call_count(__func__);

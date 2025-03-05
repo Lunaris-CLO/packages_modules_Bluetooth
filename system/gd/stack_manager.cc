@@ -100,7 +100,7 @@ void StackManager::handle_shut_down(std::promise<void> promise) {
 std::chrono::milliseconds StackManager::get_gd_stack_timeout_ms(bool is_start) {
   auto gd_timeout = os::GetSystemPropertyUint32(
         is_start ? "bluetooth.gd.start_timeout" : "bluetooth.gd.stop_timeout",
-        /* default_value = */ is_start ? 4000 : 5000);
+        /* default_value = */ is_start ? 8000 : 5000);
   return std::chrono::milliseconds(
       gd_timeout * os::GetSystemPropertyUint32("ro.hw_timeout_multiplier",
                                                /* default_value = */ 1));

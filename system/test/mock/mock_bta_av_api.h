@@ -172,6 +172,18 @@ struct BTA_AvOpenRc {
 };
 extern struct BTA_AvOpenRc BTA_AvOpenRc;
 
+// Name: BTA_AvCancelAVRCAlarm
+// Params: const RawAddress& bd_addr, uint8_t handle
+// Return: void
+struct BTA_AvCancelAVRCAlarm {
+  std::function<void(const RawAddress& bd_addr, uint8_t handle)> body{
+      [](const RawAddress& /* bd_addr */, uint8_t /* handle */) {}};
+  void operator()(const RawAddress& bd_addr, uint8_t handle) {
+    body(bd_addr, handle);
+  };
+};
+extern struct BTA_AvCancelAVRCAlarm BTA_AvCancelAVRCAlarm;
+
 // Name: BTA_AvProtectReq
 // Params: tBTA_AV_HNDL hndl, uint8_t* p_data, uint16_t len
 // Return: void

@@ -38,6 +38,7 @@
 #define AVRC_REV_1_4 0x0104
 #define AVRC_REV_1_5 0x0105
 #define AVRC_REV_1_6 0x0106
+#define AVRC_REV_INVALID    0x0000
 
 /* defines from the spec */
 #define AVRC_PACKET_LEN 512 /* You must support 512 byte RC packets */

@@ -1349,6 +1349,17 @@ bool is_hal_2_0_offloading() {
                             SessionType::A2DP_HARDWARE_OFFLOAD_DATAPATH));
 }
 
+bool is_hal_2_0_offloading_session_unknown() {
+    if (!is_hal_2_0_enabled()) {
+     return false;
+   }
+
+  return ((a2dp_sink_2_1 && a2dp_sink_2_1->GetSessionType() ==
+                            SessionType::UNKNOWN ) ||
+          (a2dp_sink && a2dp_sink->GetSessionType() ==
+                            SessionType::UNKNOWN));
+}
+
 // Initialize BluetoothAudio HAL: openProvider
 bool init( bluetooth::common::MessageLoopThread* message_loop) {
   LOG(WARNING) << __func__;
