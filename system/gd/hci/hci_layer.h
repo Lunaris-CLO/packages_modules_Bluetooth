@@ -154,7 +154,13 @@ class HciLayer : public Module, public HciInterface {
   struct hal_callbacks;
   impl* impl_;
   hal_callbacks* hal_callbacks_;
-  monitor_command* cmd_stats;
+  struct monitor_command {
+    unsigned int lapsed_timeout;
+    unsigned int no_packets_rx;
+    unsigned int prev_no_packets;
+    bool is_monitor_enabled;
+  };
+  monitor_command cmd_stats;
 
   std::mutex callback_handlers_guard_;
   std::mutex monitor_cmd_stats;

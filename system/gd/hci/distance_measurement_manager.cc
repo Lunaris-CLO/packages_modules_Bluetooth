@@ -49,7 +49,6 @@
 using namespace bluetooth::ras;
 using bluetooth::hci::acl_manager::PacketViewForRecombination;
 
-extern bool host_supports_cs;
 namespace bluetooth {
 namespace hci {
 const ModuleFactory DistanceMeasurementManager::Factory =
@@ -135,7 +134,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     std::vector<std::vector<std::complex<double>>> tone_pct_reflector;
     std::vector<std::vector<uint8_t>> tone_quality_indicator_initiator;
     std::vector<std::vector<uint8_t>> tone_quality_indicator_reflector;
-	std::vector<uint8_t> antenna_permutation_index_initiator;
+	  std::vector<uint8_t> antenna_permutation_index_initiator;
     std::vector<uint8_t> antenna_permutation_index_reflector;
     std::vector<int8_t> packet_quality_initiator;
     std::vector<int8_t> packet_quality_reflector;
@@ -143,6 +142,9 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     std::vector<int16_t> tod_toa_reflectors;
     std::vector<int8_t> rssi_initiator;
     std::vector<int8_t> rssi_reflector;
+    std::vector<int8_t> packet_nadm_initiator;
+    std::vector<int8_t> packet_nadm_reflector;
+    std::vector<int8_t> vendor_specific_cs_single_side_data;
     bool contains_sounding_sequence_local_;
     bool contains_sounding_sequence_remote_;
     CsProcedureDoneStatus local_status;
@@ -158,6 +160,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     RasSubeventHeader ras_subevent_header_;
     std::vector<uint8_t> ras_subevent_data_;
     uint8_t ras_subevent_counter_ = 0;
+    int8_t initiator_reference_power_level;
+    int8_t reflector_reference_power_level;
   };
 
   struct RSSITracker {
@@ -206,6 +210,27 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     uint16_t max_procedure_count = 1;
     bool waiting_for_start_callback = false;
     std::unique_ptr<os::RepeatingAlarm> repeating_alarm = nullptr;
+    uint8_t min_main_mode_steps = 0;
+    uint8_t max_main_mode_steps = 0;
+    uint8_t main_mode_repetition = 0;
+    uint8_t mode_0_steps = 0;
+    uint8_t cs_sync_phy = 0;
+    std::array<uint8_t,10> channel_map;
+    uint8_t channel_map_repetition = 0;
+    uint8_t channel_selection_type = 0;
+    uint8_t ch3c_shape = 0;
+    uint8_t ch3c_jump = 0;
+    uint8_t t_ip1_time = 0;
+    uint8_t t_ip2_time = 0;
+    uint8_t t_fcs_time = 0;
+    uint8_t t_pm_time = 0;
+    uint8_t tone_antenna_config_selection = 0;
+    uint32_t subevent_len = 0;
+    uint8_t subevents_per_event = 0;
+    uint16_t subevent_interval = 0;
+    uint16_t event_interval = 0;
+    uint16_t procedure_interval = 0;
+    uint16_t max_procedure_len = 0;
     // RAS data
     RangingHeader ranging_header_;
     PacketViewForRecombination segment_data_;
@@ -279,10 +304,6 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 
     hci_layer_->RegisterLeEventHandler(hci::SubeventCode::TRANSMIT_POWER_REPORTING,
                                        handler_->BindOn(this, &impl::on_transmit_power_reporting));
-    if (!host_supports_cs) {
-      log::info("host is not supporting channel sounding: false");
-      return;
-    }
     distance_measurement_interface_ = hci_layer_->GetDistanceMeasurementInterface(
             handler_->BindOn(this, &DistanceMeasurementManager::impl::handle_event));
     distance_measurement_interface_->EnqueueCommand(
@@ -297,7 +318,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 
   void register_distance_measurement_callbacks(DistanceMeasurementCallbacks* callbacks) {
     distance_measurement_callbacks_ = callbacks;
-    if (host_supports_cs && ranging_hal_->IsBound()) {
+    if (ranging_hal_->IsBound()) {
       auto vendor_specific_data = ranging_hal_->GetVendorSpecificCharacteristics();
       if (!vendor_specific_data.empty()) {
         distance_measurement_callbacks_->OnVendorSpecificCharacteristics(vendor_specific_data);
@@ -308,14 +329,6 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
   void set_cs_params(const Address& cs_remote_address, int mSightType, int mLocationType,
 		     int mCsSecurityLevel, int mFrequency, int mDuration) {
     uint16_t connection_handle = acl_manager_->HACK_GetLeHandle(cs_remote_address);
-
-    if (!host_supports_cs) {
-      log::error("Channel Sounding is not enabled");
-      distance_measurement_callbacks_->OnDistanceMeasurementStopped(
-		      cs_remote_address, REASON_INTERNAL_ERROR, METHOD_CS);
-      return;
-    }
-
     log::info("Address:{}, CsSecurityLevel:{} frequency:{}",
 		    cs_remote_address, mCsSecurityLevel, mFrequency);
     if (set_cs_params_.find(connection_handle) != set_cs_params_.end() &&
@@ -435,13 +448,6 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
   void start_distance_measurement_with_cs(const Address& cs_remote_address,
                                           uint16_t connection_handle) {
     log::info("connection_handle: {}, address: {}", connection_handle, cs_remote_address);
-    if (!host_supports_cs) {
-      log::error("Channel Sounding is not enabled");
-      distance_measurement_callbacks_->OnDistanceMeasurementStopped(
-              cs_remote_address, REASON_INTERNAL_ERROR, METHOD_CS);
-      return;
-    }
-
     if (!cs_requester_trackers_[connection_handle].ras_connected) {
       log::info("Waiting for RAS connected");
       return;
@@ -1073,11 +1079,28 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     if (event_view.GetAction() == CsAction::CONFIG_REMOVED) {
       return;
     }
-    log::info("Get {}", event_view.ToString());
+    log::verbose("Get {}", event_view.ToString());
     live_tracker->role = event_view.GetRole();
     live_tracker->main_mode_type = event_view.GetMainModeType();
     live_tracker->sub_mode_type = event_view.GetSubModeType();
     live_tracker->rtt_type = event_view.GetRttType();
+    live_tracker->min_main_mode_steps = event_view.GetMinMainModeSteps();
+    live_tracker->max_main_mode_steps = event_view.GetMaxMainModeSteps();
+    live_tracker->main_mode_repetition = event_view.GetMainModeRepetition();
+    live_tracker->mode_0_steps = event_view.GetMode0Steps();
+    live_tracker->cs_sync_phy = (uint8_t)event_view.GetCsSyncPhy();
+    live_tracker->channel_map = event_view.GetChannelMap();
+    live_tracker->channel_map_repetition = event_view.GetChannelMapRepetition();
+    live_tracker->channel_selection_type = (uint8_t)event_view.GetChannelSelectionType();
+    live_tracker->ch3c_shape = (uint8_t)event_view.GetCh3cShape();
+    live_tracker->ch3c_jump = event_view.GetCh3cJump();
+    live_tracker->t_ip1_time = event_view.GetTIp1Time();
+    live_tracker->t_ip2_time = event_view.GetTIp2Time();
+    live_tracker->t_fcs_time = event_view.GetTFcsTime();
+    live_tracker->t_pm_time = event_view.GetTPmTime();
+
+
+
     if (live_tracker->local_hci_role == hci::Role::CENTRAL) {
       // send the cmd from the BLE central only.
       send_le_cs_security_enable(connection_handle);
@@ -1200,6 +1223,13 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       live_tracker->config_id = config_id;
       live_tracker->selected_tx_power = event_view.GetSelectedTxPower();
       live_tracker->n_procedure_count = event_view.GetProcedureCount();
+      live_tracker->tone_antenna_config_selection = event_view.GetToneAntennaConfigSelection();
+      live_tracker->subevent_len = event_view.GetSubeventLen();
+      live_tracker->subevents_per_event = event_view.GetSubeventsPerEvent();
+      live_tracker->subevent_interval = event_view.GetSubeventInterval();
+      live_tracker->event_interval = event_view.GetEventInterval();
+      live_tracker->procedure_interval = event_view.GetProcedureInterval();
+      live_tracker->max_procedure_len = event_view.GetMaxProcedureLen();
 
       if (live_tracker->local_start && live_tracker->waiting_for_start_callback) {
         live_tracker->waiting_for_start_callback = false;
@@ -1235,6 +1265,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 
     // Common data for LE_CS_SUBEVENT_RESULT and LE_CS_SUBEVENT_RESULT_CONTINUE,
     uint16_t connection_handle = 0;
+    int8_t reference_power_level = 0;
     CsProcedureDoneStatus procedure_done_status;
     CsSubeventDoneStatus subevent_done_status;
     ProcedureAbortReason procedure_abort_reason;
@@ -1276,10 +1307,14 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       ras_subevent_header.frequency_compensation_ = cs_event_result.GetFrequencyCompensation();
       ras_subevent_header.reference_power_level_ = cs_event_result.GetReferencePowerLevel();
       ras_subevent_header.num_steps_reported_ = 0;
+      reference_power_level = cs_event_result.GetReferencePowerLevel();
+      log::warn("reference power level: {}", reference_power_level);
 
-      log::info("LE_CS_SUBEVENT_RESULT: start_acl_conn_event {} procedure_counter {} acl_handle {}",
-		 cs_event_result.GetStartAclConnEvent(), cs_event_result.GetProcedureCounter(),
-		 cs_event_result.GetConnectionHandle());
+      log::verbose(
+          "LE_CS_SUBEVENT_RESULT: start_acl_conn_event {} procedure_counter {} acl_handle {}",
+          cs_event_result.GetStartAclConnEvent(),
+          cs_event_result.GetProcedureCounter(),
+          cs_event_result.GetConnectionHandle());
     } else {
       auto cs_event_result = LeCsSubeventResultContinueView::Create(event);
       if (!cs_event_result.IsValid()) {
@@ -1294,6 +1329,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       procedure_abort_reason = cs_event_result.GetProcedureAbortReason();
       subevent_abort_reason = cs_event_result.GetSubeventAbortReason();
       result_data_structures = cs_event_result.GetResultDataStructures();
+      
       if (live_tracker == nullptr) {
         log::warn("Can't find any tracker for {}", connection_handle);
         return;
@@ -1336,6 +1372,12 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               static_cast<bluetooth::ras::SubeventAbortReason>(subevent_abort_reason);
     }
     parse_cs_result_data(result_data_structures, *procedure_data, live_tracker->role);
+    if (live_tracker->role == CsRole::INITIATOR) {
+      procedure_data->initiator_reference_power_level = reference_power_level;
+    }
+    else if (live_tracker->role == CsRole::REFLECTOR) {
+      procedure_data->reflector_reference_power_level = reference_power_level;
+    }
     // Update procedure status
     procedure_data->local_status = procedure_done_status;
     check_cs_procedure_complete(live_tracker, procedure_data, connection_handle);
@@ -1427,8 +1469,10 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       return;
     }
 
-    log::info("Receive segment for segment counter {}, size {}",
-               segmentation_header.rolling_segment_counter_, raw_data.size());
+    log::verbose(
+        "Receive segment for segment counter {}, size {}",
+        segmentation_header.rolling_segment_counter_,
+        raw_data.size());
 
     PacketView<kLittleEndian> segment_data(std::make_shared<std::vector<uint8_t>>(raw_data));
     if (segmentation_header.first_segment_) {
@@ -1476,7 +1520,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 
   void parse_ras_segments(RangingHeader ranging_header, PacketViewForRecombination& segment_data,
                           uint16_t connection_handle) {
-    log::info("Data size {}, Ranging_header {}", segment_data.size(), ranging_header.ToString());
+    log::verbose("Data size {}, Ranging_header {}", segment_data.size(), ranging_header.ToString());
     auto procedure_data =
             get_procedure_data_for_ras(connection_handle, ranging_header.ranging_counter_);
     if (procedure_data == nullptr) {
@@ -1519,7 +1563,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
           return;
         }
         parse_index = after;
-        log::info("step:{}, {}", (uint16_t)i, step_mode.ToString());
+        log::verbose("step:{}, {}", (uint16_t)i, step_mode.ToString());
         if (step_mode.aborted_) {
           continue;
         }
@@ -1543,9 +1587,9 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                           CsRoleText(remote_role));
                 return;
               }
-			  log::info("step_data: {}", tone_data.ToString());
-			  procedure_data->packet_quality_reflector.push_back(tone_data.packet_quality_);
-			  procedure_data->rssi_reflector.push_back(tone_data.packet_rssi_);
+              log::verbose("step_data: {}", tone_data.ToString());
+              procedure_data->packet_quality_reflector.push_back(tone_data.packet_quality_);
+              procedure_data->rssi_reflector.push_back(tone_data.packet_rssi_);
             }
             parse_index = after;
           } break;
@@ -1562,7 +1606,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                 parse_index = after;
                 procedure_data->toa_tod_initiators.emplace_back(tone_data.toa_tod_initiator_);
                 procedure_data->packet_quality_initiator.emplace_back(tone_data.packet_quality_);
-				procedure_data->rssi_initiator.push_back(tone_data.packet_rssi_);
+                procedure_data->rssi_initiator.push_back(tone_data.packet_rssi_);
+                procedure_data->packet_nadm_initiator.push_back((int8_t)tone_data.packet_nadm_);
               } else {
                 LeCsMode1InitatorData tone_data;
                 after = LeCsMode1InitatorData::Parse(&tone_data, parse_index);
@@ -1574,7 +1619,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                 parse_index = after;
                 procedure_data->toa_tod_initiators.emplace_back(tone_data.toa_tod_initiator_);
                 procedure_data->packet_quality_initiator.emplace_back(tone_data.packet_quality_);
-			    procedure_data->rssi_initiator.push_back(tone_data.packet_rssi_);
+                procedure_data->rssi_initiator.push_back(tone_data.packet_rssi_);
+                procedure_data->packet_nadm_initiator.push_back((int8_t)tone_data.packet_nadm_);
               }
             } else {
               if (procedure_data->contains_sounding_sequence_remote_) {
@@ -1588,7 +1634,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                 parse_index = after;
                 procedure_data->tod_toa_reflectors.emplace_back(tone_data.tod_toa_reflector_);
                 procedure_data->packet_quality_reflector.emplace_back(tone_data.packet_quality_);
-				procedure_data->rssi_reflector.push_back(tone_data.packet_rssi_);
+                procedure_data->rssi_reflector.push_back(tone_data.packet_rssi_);
+                procedure_data->packet_nadm_reflector.push_back((int8_t)tone_data.packet_nadm_);
               } else {
                 LeCsMode1ReflectorData tone_data;
                 after = LeCsMode1ReflectorData::Parse(&tone_data, parse_index);
@@ -1600,7 +1647,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                 parse_index = after;
                 procedure_data->tod_toa_reflectors.emplace_back(tone_data.tod_toa_reflector_);
                 procedure_data->packet_quality_reflector.emplace_back(tone_data.packet_quality_);
-				procedure_data->rssi_reflector.push_back(tone_data.packet_rssi_);
+                procedure_data->rssi_reflector.push_back(tone_data.packet_rssi_);
+                procedure_data->packet_nadm_reflector.push_back((int8_t)tone_data.packet_nadm_);
               }
             }
           } break;
@@ -1646,8 +1694,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               double i_value = get_iq_value(tone_data.tone_data_[k].i_sample_);
               double q_value = get_iq_value(tone_data.tone_data_[k].q_sample_);
               uint8_t tone_quality_indicator = tone_data.tone_data_[k].tone_quality_indicator_;
-              log::info("antenna_path {}, {:f}, {:f}", (uint16_t)(antenna_path + 1), i_value,
-                           q_value);
+              log::verbose(
+                  "antenna_path {}, {:f}, {:f}", (uint16_t)(antenna_path + 1), i_value, q_value);
               if (remote_role == CsRole::INITIATOR) {
                 procedure_data->tone_pct_initiator[antenna_path].emplace_back(i_value, q_value);
                 procedure_data->tone_quality_indicator_initiator[antenna_path].emplace_back(
@@ -1699,6 +1747,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                 procedure_data->antenna_permutation_index_reflector.push_back(permutation_index);
                 procedure_data->rssi_initiator.emplace_back(tone_data_view.packet_rssi_);
                 procedure_data->toa_tod_initiators.emplace_back(tone_data_view.toa_tod_initiator_);
+                procedure_data->packet_nadm_initiator.push_back((int8_t)tone_data_view.packet_nadm_);
                 procedure_data->packet_quality_initiator.emplace_back(
                         tone_data_view.packet_quality_);
                 auto tone_data = tone_data_view.tone_data_;
@@ -1717,6 +1766,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                 permutation_index = tone_data_view.antenna_permutation_index_;
                 procedure_data->rssi_initiator.emplace_back(tone_data_view.packet_rssi_);
                 procedure_data->toa_tod_initiators.emplace_back(tone_data_view.toa_tod_initiator_);
+                procedure_data->packet_nadm_initiator.push_back((int8_t)tone_data_view.packet_nadm_);
                 procedure_data->packet_quality_initiator.emplace_back(
                         tone_data_view.packet_quality_);
                 auto tone_data = tone_data_view.tone_data_;
@@ -1738,6 +1788,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                 permutation_index = tone_data_view.antenna_permutation_index_;
                 procedure_data->rssi_reflector.emplace_back(tone_data_view.packet_rssi_);
                 procedure_data->tod_toa_reflectors.emplace_back(tone_data_view.tod_toa_reflector_);
+                procedure_data->packet_nadm_reflector.push_back((int8_t)tone_data_view.packet_nadm_);
                 procedure_data->packet_quality_reflector.emplace_back(
                         tone_data_view.packet_quality_);
                 auto tone_data = tone_data_view.tone_data_;
@@ -1756,6 +1807,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                 permutation_index = tone_data_view.antenna_permutation_index_;
                 procedure_data->rssi_reflector.emplace_back(tone_data_view.packet_rssi_);
                 procedure_data->tod_toa_reflectors.emplace_back(tone_data_view.tod_toa_reflector_);
+                procedure_data->packet_nadm_reflector.push_back((int8_t)tone_data_view.packet_nadm_);
                 procedure_data->packet_quality_reflector.emplace_back(
                         tone_data_view.packet_quality_);
                 auto tone_data = tone_data_view.tone_data_;
@@ -1811,7 +1863,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
         return &data;
       }
     }
-    log::info("Create data for procedure_counter: {}", procedure_counter);
+    log::verbose("Create data for procedure_counter: {}", procedure_counter);
     data_list.emplace_back(procedure_counter, num_antenna_paths, live_tracker->config_id,
                            live_tracker->selected_tx_power);
 
@@ -1909,14 +1961,62 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
         raw_data.tod_toa_reflectors_ = procedure_data->tod_toa_reflectors;
         raw_data.packet_quality_initiator_ = procedure_data->packet_quality_initiator;
         raw_data.packet_quality_reflector_ = procedure_data->packet_quality_reflector;
+        raw_data.initiator_reference_power_level = procedure_data->initiator_reference_power_level;
+        raw_data.reflector_reference_power_level = procedure_data->reflector_reference_power_level;
+        raw_data.packet_nadm_initiator_ = procedure_data->packet_nadm_initiator;
+        raw_data.packet_nadm_reflector_ = procedure_data->packet_nadm_reflector;
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->main_mode_type);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->sub_mode_type);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->min_main_mode_steps);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->max_main_mode_steps);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->main_mode_repetition);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->mode_0_steps);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->role);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->rtt_type);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->cs_sync_phy);
+        for (int i=0;i<10;i++) {
+          raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->channel_map[i]);
+        }
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->channel_map_repetition);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->channel_selection_type);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->ch3c_shape);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->ch3c_jump);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->t_ip1_time);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->t_ip2_time);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->t_fcs_time);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->t_pm_time);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->tone_antenna_config_selection);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->selected_tx_power);
+        raw_data.vendor_specific_cs_single_side_data.push_back((live_tracker->subevent_len >> 16) & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back((live_tracker->subevent_len >> 8) & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back(live_tracker->subevent_len & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back((uint8_t)live_tracker->subevents_per_event);
+        raw_data.vendor_specific_cs_single_side_data.push_back((live_tracker->subevent_interval >> 8) & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back(live_tracker->subevent_interval & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back((live_tracker->event_interval >> 8) & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back(live_tracker->event_interval & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back((live_tracker->procedure_interval >> 8) & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back(live_tracker->procedure_interval & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back((live_tracker->n_procedure_count >> 8) & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back(live_tracker->n_procedure_count & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back((live_tracker->max_procedure_len >> 8) & 0xFF);
+        raw_data.vendor_specific_cs_single_side_data.push_back(live_tracker->max_procedure_len & 0xFF);
+        
+        
         struct timeval tv;
 	    gettimeofday(&tv, NULL);
 	    curr_proc_complete_timestampMs  = tv.tv_sec*1e6*1ll + tv.tv_usec*1ll;
         raw_data.timestampMs_ = (long)(curr_proc_complete_timestampMs - proc_start_timestampMs);
-		log::info("timestampMs_: {} current_proc : {} proc start :{}",
-		            raw_data.timestampMs_, curr_proc_complete_timestampMs,
-		            proc_start_timestampMs);
-        ranging_hal_->WriteRawData(connection_handle, raw_data);
+        log::verbose(
+            "timestampMs_: {} current_proc : {} proc start :{}",
+            raw_data.timestampMs_,
+            curr_proc_complete_timestampMs,
+            proc_start_timestampMs);
+
+        for (size_t i=0;i<raw_data.vendor_specific_cs_single_side_data.size();i++) {
+          log::warn("Vendor Specific data : {}", raw_data.vendor_specific_cs_single_side_data[i]);
+        }
+        ranging_hal_->WriteRawData(connection_handle, raw_data); 
       }
     }
 
@@ -2005,6 +2105,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               procedure_data.rssi_initiator.emplace_back(tone_data_view.packet_rssi_);
               procedure_data.toa_tod_initiators.emplace_back(tone_data_view.toa_tod_initiator_);
               procedure_data.packet_quality_initiator.emplace_back(tone_data_view.packet_quality_);
+              procedure_data.packet_nadm_initiator.push_back((int8_t)tone_data_view.packet_nadm_);
             } else {
               LeCsMode1InitatorData tone_data_view;
               auto after = LeCsMode1InitatorData::Parse(&tone_data_view, iterator);
@@ -2017,6 +2118,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               procedure_data.rssi_initiator.emplace_back(tone_data_view.packet_rssi_);
               procedure_data.toa_tod_initiators.emplace_back(tone_data_view.toa_tod_initiator_);
               procedure_data.packet_quality_initiator.emplace_back(tone_data_view.packet_quality_);
+              procedure_data.packet_nadm_initiator.push_back((int8_t)tone_data_view.packet_nadm_);
             }
             procedure_data.step_channel.push_back(step_channel);
           } else {
@@ -2032,6 +2134,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               procedure_data.rssi_reflector.emplace_back(tone_data_view.packet_rssi_);
               procedure_data.tod_toa_reflectors.emplace_back(tone_data_view.tod_toa_reflector_);
               procedure_data.packet_quality_reflector.emplace_back(tone_data_view.packet_quality_);
+              procedure_data.packet_nadm_reflector.push_back((int8_t)tone_data_view.packet_nadm_);
             } else {
               LeCsMode1ReflectorData tone_data_view;
               auto after = LeCsMode1ReflectorData::Parse(&tone_data_view, iterator);
@@ -2044,6 +2147,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               procedure_data.rssi_reflector.emplace_back(tone_data_view.packet_rssi_);
               procedure_data.tod_toa_reflectors.emplace_back(tone_data_view.tod_toa_reflector_);
               procedure_data.packet_quality_reflector.emplace_back(tone_data_view.packet_quality_);
+              procedure_data.packet_nadm_reflector.push_back((int8_t)tone_data_view.packet_nadm_);
             }
           }
         } break;
@@ -2106,6 +2210,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               procedure_data.rssi_initiator.emplace_back(tone_data_view.packet_rssi_);
               procedure_data.toa_tod_initiators.emplace_back(tone_data_view.toa_tod_initiator_);
               procedure_data.packet_quality_initiator.emplace_back(tone_data_view.packet_quality_);
+              procedure_data.packet_nadm_initiator.push_back((int8_t)tone_data_view.packet_nadm_);
               auto tone_data = tone_data_view.tone_data_;
               view_tone_data.reserve(tone_data.size());
               view_tone_data.insert(view_tone_data.end(), tone_data.begin(), tone_data.end());
@@ -2122,6 +2227,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               procedure_data.rssi_initiator.emplace_back(tone_data_view.packet_rssi_);
               procedure_data.toa_tod_initiators.emplace_back(tone_data_view.toa_tod_initiator_);
               procedure_data.packet_quality_initiator.emplace_back(tone_data_view.packet_quality_);
+              procedure_data.packet_nadm_initiator.push_back((int8_t)tone_data_view.packet_nadm_);
               auto tone_data = tone_data_view.tone_data_;
               view_tone_data.reserve(tone_data.size());
               view_tone_data.insert(view_tone_data.end(), tone_data.begin(), tone_data.end());
@@ -2141,6 +2247,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               procedure_data.rssi_reflector.emplace_back(tone_data_view.packet_rssi_);
               procedure_data.tod_toa_reflectors.emplace_back(tone_data_view.tod_toa_reflector_);
               procedure_data.packet_quality_reflector.emplace_back(tone_data_view.packet_quality_);
+              procedure_data.packet_nadm_reflector.push_back((int8_t)tone_data_view.packet_nadm_);
               auto tone_data = tone_data_view.tone_data_;
               view_tone_data.reserve(tone_data.size());
               view_tone_data.insert(view_tone_data.end(), tone_data.begin(), tone_data.end());
@@ -2158,6 +2265,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
               procedure_data.rssi_reflector.emplace_back(tone_data_view.packet_rssi_);
               procedure_data.tod_toa_reflectors.emplace_back(tone_data_view.tod_toa_reflector_);
               procedure_data.packet_quality_reflector.emplace_back(tone_data_view.packet_quality_);
+              procedure_data.packet_nadm_reflector.push_back((int8_t)tone_data_view.packet_nadm_);
               auto tone_data = tone_data_view.tone_data_;
               view_tone_data.reserve(tone_data.size());
               view_tone_data.insert(view_tone_data.end(), tone_data.begin(), tone_data.end());

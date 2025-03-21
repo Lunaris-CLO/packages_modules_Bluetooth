@@ -52,6 +52,11 @@ struct ChannelSoundingRawData {
   std::vector<int8_t> packet_quality_reflector_;
   std::vector<int16_t> toa_tod_initiators_;
   std::vector<int16_t> tod_toa_reflectors_;
+  std::vector<int8_t> packet_nadm_initiator_;
+  std::vector<int8_t> packet_nadm_reflector_;
+  int8_t initiator_reference_power_level;
+  int8_t reflector_reference_power_level;
+  std::vector<uint8_t> vendor_specific_cs_single_side_data;
 
 };
 

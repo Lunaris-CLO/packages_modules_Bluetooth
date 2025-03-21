@@ -202,6 +202,7 @@ void port_start_close(tPORT* p_port) {
  ******************************************************************************/
 void PORT_StartCnf(tRFC_MCB* p_mcb, uint16_t result) {
   bool no_ports_up = true;
+  bool release_mcb = false;
 
   log::verbose("result {}", result);
 
@@ -216,8 +217,7 @@ void PORT_StartCnf(tRFC_MCB* p_mcb, uint16_t result) {
       } else {
         log::warn("Unable start configuration dlci:{} result:{}", p_port->dlci,
                   result);
-
-        rfc_release_multiplexer_channel(p_mcb);
+        release_mcb = true;
 
         /* Send event to the application */
         if (p_port->p_callback && (p_port->ev_mask & PORT_EV_CONNECT_ERR)) {
@@ -233,6 +233,10 @@ void PORT_StartCnf(tRFC_MCB* p_mcb, uint16_t result) {
         port_release_port(p_port);
       }
     }
+  }
+
+  if (release_mcb) {
+    rfc_release_multiplexer_channel(p_mcb);
   }
 
   /* There can be a situation when after starting connection, user closes the */

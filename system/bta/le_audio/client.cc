@@ -1490,6 +1490,7 @@ class LeAudioClientImpl : public LeAudioClient {
      * is different from audio framework to avoid audio choppy
      * this is called when we bluetooth frame duration is changed
      */
+    log::verbose("");
     log::assert_that(active_group_id_ != bluetooth::groups::kGroupUnknown, "Active group is not set.");
     log::assert_that(le_audio_source_hal_client_ != nullptr, "Source session not acquired");
     log::assert_that(le_audio_sink_hal_client_ != nullptr, "Sink session not acquired");
@@ -5019,8 +5020,10 @@ class LeAudioClientImpl : public LeAudioClient {
           defer_sink_suspend_ack_until_stop_ = true;
           OnAudioSuspend();
         } else {
-          log::info("calling sink ConfirmSuspendRequest in audio_receiver_state_ IDLE");
-          le_audio_sink_hal_client_->ConfirmSuspendRequest();
+          if (le_audio_sink_hal_client_) {
+            log::info("calling sink ConfirmSuspendRequest in audio_receiver_state_ IDLE");
+            le_audio_sink_hal_client_->ConfirmSuspendRequest();
+          }
         }
         return;
       case AudioState::READY_TO_RELEASE:
@@ -5734,6 +5737,8 @@ class LeAudioClientImpl : public LeAudioClient {
         remote_metadata.get(remote_direction).test_any(live_context) &&
         remote_metadata.get(remote_other_direction).test_any(game_context)) {
       log::debug("Gaming vbc enabled");
+      local_metadata_context_types_.sink = game_context;
+      local_metadata_context_types_.source = game_context;
       is_game_vbc = true;
     }
 

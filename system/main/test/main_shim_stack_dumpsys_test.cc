@@ -42,7 +42,6 @@ using ::testing::_;
 
 using namespace bluetooth;
 using namespace testing;
-bool host_supports_cs = false;
 tBTM_CB btm_cb{};          // main::shim::le_scanning_manager
 tBTM_SEC_CB btm_sec_cb{};  // main::shim::acl
 

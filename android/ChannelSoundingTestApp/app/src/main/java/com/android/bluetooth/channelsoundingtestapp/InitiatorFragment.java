@@ -60,7 +60,8 @@ public class InitiatorFragment extends Fragment {
   private Button freqset;
   private Button durset;
   private Button methoddist;
-  private Button distancemarker;
+  private Button distancemarker;        // for storing the distance in the file
+  private Button distancemarkerlog;    //for adding marker in log
   private double curr_distance;
   private EditText dur_text;
   private EditText dis_meas;
@@ -87,6 +88,7 @@ public class InitiatorFragment extends Fragment {
     transaction.replace(R.id.init_ble_connection_container, bleConnectionFragment).commit();
     mSpinnerSecurityMode = (Spinner) root.findViewById(R.id.spinner_security_mode);
     distancemarker = (Button) root.findViewById(R.id.marker_dist);
+    distancemarkerlog = (Button) root.findViewById(R.id.marker_log);
     mSpinnersetfrequency = (Spinner) root.findViewById(R.id.spinner_frequency);
     dur_text = (EditText) root.findViewById(R.id.edittext_duration);
     dis_meas = (EditText) root.findViewById(R.id.distance_meas);
@@ -230,8 +232,13 @@ public class InitiatorFragment extends Fragment {
 
         distancemarker.setOnClickListener(v -> {
           String dist_meas = dis_meas.getText().toString();
+          mInitiatorViewModel.actualDistance(dist_meas);
           FileAppender.appendToFile(
               getActivity(), "myfile.csv", "changing distance to " + dist_meas + "\n");
+        });
+
+        distancemarkerlog.setOnClickListener(v -> {
+          mInitiatorViewModel.logMarker();
         });
     }
 

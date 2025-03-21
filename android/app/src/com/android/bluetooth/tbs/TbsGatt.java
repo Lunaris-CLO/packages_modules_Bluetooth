@@ -979,8 +979,18 @@ public class TbsGatt {
     }
 
     private void restoreCccValuesForStoredDevices() {
-        BluetoothGattService gattService = mBluetoothGattServer.getService(UUID_GTBS);
-
+        BluetoothGattService gattService = null;
+        if (mBluetoothGattServer != null) {
+           gattService = mBluetoothGattServer.getService(UUID_GTBS);
+        }
+        else {
+           Log.e(TAG, "mBluetoothGattServer is null, return");
+           return;
+        }
+        if(gattService == null) {
+           Log.e(TAG, "gattService is null, return");
+           return;
+        }
         for (BluetoothDevice device : mAdapterService.getBondedDevices()) {
             byte[] gtbs_cccd = device.getMetadata(METADATA_GTBS_CCCD);
 

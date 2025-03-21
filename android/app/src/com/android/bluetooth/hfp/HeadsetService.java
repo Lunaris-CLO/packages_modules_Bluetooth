@@ -1548,6 +1548,7 @@ public class HeadsetService extends ProfileService {
             mActiveDevice = null;
             mNativeInterface.setActiveDevice(null);
             broadcastActiveDevice(null);
+            updateInbandRinging(null, true);
         }
     }
 
@@ -1627,7 +1628,9 @@ public class HeadsetService extends ProfileService {
                                     BluetoothProfileConnectionInfo.createHfpInfo());
                 }
                 broadcastActiveDevice(mActiveDevice);
+                updateInbandRinging(device, true);
             } else if (shouldPersistAudio()) {
+                updateInbandRinging(device, true);
                 /* If HFP is getting active for a phonecall and there is LeAudio device active,
                  * Lets inactive LeAudio device as soon as possible so there is no CISes connected
                  * when SCO is created
@@ -1689,6 +1692,7 @@ public class HeadsetService extends ProfileService {
                                     BluetoothProfileConnectionInfo.createHfpInfo());
                 }
                 broadcastActiveDevice(mActiveDevice);
+                updateInbandRinging(device, true);
             }
         }
         return true;
@@ -2566,16 +2570,12 @@ public class HeadsetService extends ProfileService {
                 return;
             }
 
-            List<BluetoothDevice> audioConnectableDevices = getConnectedDevices();
-            final int enabled;
             final boolean inbandRingingRuntimeDisable = mInbandRingingRuntimeDisable;
-
-            if (audioConnectableDevices.size() > 1 || isHeadsetClientConnected()) {
+            if (getConnectedDevices().size() > 1 || isHeadsetClientConnected() ||
+                            mActiveDevice == null) {
                 mInbandRingingRuntimeDisable = true;
-                enabled = 0;
             } else {
                 mInbandRingingRuntimeDisable = false;
-                enabled = 1;
             }
 
             final boolean updateAll = inbandRingingRuntimeDisable != mInbandRingingRuntimeDisable;
@@ -2583,18 +2583,18 @@ public class HeadsetService extends ProfileService {
             Log.i(
                     TAG,
                     "updateInbandRinging():"
-                            + " Device="
-                            + device
+                            + " ActiveDevice="
+                            + mActiveDevice
                             + " enabled="
-                            + enabled
+                            + !mInbandRingingRuntimeDisable
                             + " connected="
                             + connected
                             + " Update all="
                             + updateAll);
 
-            StateMachineTask sendBsirTask =
-                    stateMachine ->
-                            stateMachine.sendMessage(HeadsetStateMachine.SEND_BSIR, enabled);
+            StateMachineTask sendBsirTask = stateMachine ->
+                    stateMachine.sendMessage(HeadsetStateMachine.SEND_BSIR,
+                                    mInbandRingingRuntimeDisable ? 0 : 1);
 
             if (updateAll) {
                 doForEachConnectedStateMachine(sendBsirTask);

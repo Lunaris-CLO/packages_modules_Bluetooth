@@ -2823,8 +2823,8 @@ public class BassClientService extends ProfileService {
     public List<BluetoothLeBroadcastReceiveState> getAllSources(BluetoothDevice sink) {
         log("getAllSources for " + sink);
         synchronized (mStateMachines) {
-            BassClientStateMachine stateMachine = getOrCreateStateMachine(sink);
-            if (stateMachine == null) {
+            BassClientStateMachine stateMachine;
+            if (sink == null || (stateMachine = mStateMachines.get(sink)) == null) {
                 log("stateMachine is null");
                 return Collections.emptyList();
             }
