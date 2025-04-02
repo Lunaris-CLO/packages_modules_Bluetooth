@@ -49,6 +49,7 @@ bool is_hal_enabled();
  ***/
 bool is_hal_offloading();
 
+bool is_hal_2_0_offloading_session_unknown();
 /***
  * Initialize BluetoothAudio HAL: openProvider
  ***/

@@ -35,6 +35,8 @@ bool is_hal_2_0_enabled();
 // Check if new bluetooth_audio is running with offloading encoders
 bool is_hal_2_0_offloading();
 
+bool is_hal_2_0_offloading_session_unknown();
+
 // Initialize BluetoothAudio HAL: openProvider
 bool init(bluetooth::common::MessageLoopThread* message_loop);
 

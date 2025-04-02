@@ -839,7 +839,7 @@
             "name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_32_2-Two-OneChan-SrcAse-Aptx_LeX_V1_32_2_L_R",
             "codec_config_name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_32_2-Two-OneChan-SrcAse-Aptx_LeX_V1_32_2_L_R",
             "qos_config_name": [
-                "QoS_Config_32_2_1"
+                "VND_QoS_Config_R3_L10"
 	    ],
             "codec_metadata_name": [
                 "VND_AptxLeX_V1_VS_Metadata"
@@ -849,7 +849,7 @@
             "name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_32_2-Two-OneChan-SrcAse-Aptx_LeX_V1_32_2",
             "codec_config_name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_32_2-Two-OneChan-SrcAse-Aptx_LeX_V1_32_2",
             "qos_config_name": [
-                "QoS_Config_32_2_1"
+                "VND_QoS_Config_R3_L10"
 	    ],
             "codec_metadata_name": [
                 "VND_AptxLeX_V1_VS_Metadata"
@@ -1380,7 +1380,7 @@
             "name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_48_High_Reliability",
             "codec_config_name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_48",
             "qos_config_name": [
-                "VND_QoS_Config_R4_L10"
+                "VND_QoS_Config_R14_L110"
             ],
             "codec_metadata_name": [
                 "VND_AptxLeX_V1_VS_Metadata"
@@ -1390,7 +1390,7 @@
             "name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_96_High_Reliability_L_R",
             "codec_config_name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_96_L_R",
             "qos_config_name": [
-                "VND_QoS_Config_R4_L10"
+                "VND_QoS_Config_R14_L110"
             ],
             "codec_metadata_name": [
                 "VND_AptxLeX_V1_VS_Metadata"
@@ -1400,7 +1400,7 @@
             "name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_96_High_Reliability",
             "codec_config_name": "VND_Two-OneChan-SnkAse-Aptx_LeX_V1_96",
             "qos_config_name": [
-                "VND_QoS_Config_R4_L10"
+                "VND_QoS_Config_R14_L110"
             ],
             "codec_metadata_name": [
                 "VND_AptxLeX_V1_VS_Metadata"
@@ -8231,6 +8231,11 @@
             "max_transport_latency": 100
         },
         {
+            "name": "VND_QoS_Config_R3_L10",
+            "retransmission_number": 3,
+            "max_transport_latency": 10
+        },
+        {
             "name": "VND_QoS_Config_R31_L100",
             "target_latency": "HIGH_RELIABILITY",
             "retransmission_number": 31,
@@ -8242,9 +8247,9 @@
             "max_transport_latency": 74
         },
         {
-            "name": "VND_QoS_Config_R4_L10",
-            "retransmission_number": 4,
-            "max_transport_latency": 10
+            "name": "VND_QoS_Config_R14_L110",
+            "retransmission_number": 14,
+            "max_transport_latency": 110
         },
         {
             "name": "VND_QoS_Config_R3_L15",

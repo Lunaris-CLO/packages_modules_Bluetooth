@@ -671,6 +671,31 @@ void bta_av_rc_opened(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data) {
 
 /*******************************************************************************
  *
+ * Function         bta_av_cancel_avrc_alarm
+ *
+ * Description      Cancel AVRCP alarm
+ *
+ * Returns          void
+ *
+ ******************************************************************************/
+void bta_av_cancel_avrc_alarm(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data) {
+  log::verbose("");
+  tBTA_AV_SCB* p_scb;
+  int i;
+
+  /* find the SCB & stop the timer */
+  for (i = 0; i < BTA_AV_NUM_STRS; i++) {
+    p_scb = p_cb->p_scb[i];
+    if (p_scb && p_scb->PeerAddress() == p_data->cancel_avrc_alarm.peer_addr) {
+      log::info("Cancel AVRCP timer");
+      alarm_cancel(p_scb->avrc_ct_timer);
+      break;
+    }
+  }
+}
+
+/*******************************************************************************
+ *
  * Function         bta_av_rc_remote_cmd
  *
  * Description      Send an AVRCP remote control command.

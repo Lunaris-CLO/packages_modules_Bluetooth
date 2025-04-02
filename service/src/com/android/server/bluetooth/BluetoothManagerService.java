@@ -134,7 +134,7 @@ class BluetoothManagerService {
     private static final int HW_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
 
     // Maximum msec to wait for a bind
-    private static final int TIMEOUT_BIND_MS = 4000 * HW_MULTIPLIER;
+    private static final int TIMEOUT_BIND_MS = 8000 * HW_MULTIPLIER;
 
     // Timeout value for synchronous binder call
     private static final Duration STATE_TIMEOUT = Duration.ofSeconds(4 * HW_MULTIPLIER);

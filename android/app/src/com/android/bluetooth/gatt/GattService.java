@@ -3270,7 +3270,16 @@ public class GattService extends ProfileService {
         Integer connId = mServerMap.connIdByAddress(serverIf, address);
         Log.d(TAG, "serverDisconnect() - address=" + address + ", connId=" + connId);
 
-        mNativeInterface.gattServerDisconnect(serverIf, address, connId != null ? connId : 0);
+        int state = BluetoothAdapter.STATE_OFF;
+        if (mAdapterService != null) {
+            state = mAdapterService.getState();
+        }
+
+        if(state == BluetoothAdapter.STATE_ON || state == BluetoothAdapter.STATE_BLE_ON) {
+           mNativeInterface.gattServerDisconnect(serverIf, address, connId != null ? connId : 0);
+        } else {
+            Log.w(TAG, "serverDisconnect() - Disallowed in BT state: " + state);
+        }
     }
 
     @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)

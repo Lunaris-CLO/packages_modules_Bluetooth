@@ -76,6 +76,8 @@ bool is_qc_hal_enabled();
 
 bool is_hal_2_0_offloading();
 
+bool is_hal_2_0_offloading_session_unknown();
+
 enum class BluetoothAudioHalVersion : uint8_t {
   VERSION_2_0 = 0,
   VERSION_2_1,

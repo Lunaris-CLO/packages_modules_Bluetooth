@@ -34,12 +34,16 @@
 #include "bta/include/bta_le_audio_api.h"
 
 bool btif_av_src_sink_coexist_enabled(void) { return true; }
-void btif_av_clear_remote_suspend_flag(A2dpType type) {return;}
+void btif_av_clear_remote_suspend_flag(A2dpType type) { return; }
 bool btif_av_check_flag(const A2dpType local_a2dp_type, uint8_t flag) { return false; }
-void btif_av_stream_start(A2dpType type) {return;}
+void btif_av_stream_start(A2dpType type) { return; }
 bool bluetooth::headset::IsCallIdle(void) { return true; }
 bool LeAudioClient::IsLeAudioClientRunning() { return false; }
 bool LeAudioClient::IsLeAudioClientInIdle(void) { return true; }
+size_t btif_config_get_bin_length(const std::string& section,
+                                   const std::string& key) { return 0; }
+bool btif_config_get_bin(const std::string& section, const std::string& key,
+                          uint8_t* value, size_t* length) { return true; }
 
 namespace bluetooth {
 namespace avrcp {

@@ -311,6 +311,9 @@ public class TransitionalScanHelper {
         if (mTestModeAccessor.isTestModeEnabled()) return;
 
         AppScanStats.recordScanRadioResultCount();
+        //Since JNI is sending original address as Empty addr.
+        //So assigning original addr to actual address
+        originalAddress = address;
         onScanResultInternal(
                 eventType,
                 addressType,

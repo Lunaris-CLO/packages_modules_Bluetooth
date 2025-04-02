@@ -58,6 +58,7 @@ enum {
   BTA_AV_API_RC_CLOSE_EVT,
   BTA_AV_AVRC_OPEN_EVT,
   BTA_AV_AVRC_MSG_EVT,
+  BTA_AV_API_RC_CANCEL_ALARM,
   BTA_AV_AVRC_NONE_EVT,
 
   /* these events are handled by the AV stream state machine */
@@ -348,6 +349,13 @@ typedef struct {
   BT_HDR_RIGID hdr;
 } tBTA_AV_API_OPEN_RC;
 
+/* date type for BTA_AV_API_RC_CANCEL_ALARM*/
+typedef struct {
+  BT_HDR_RIGID hdr;
+  uint8_t handle;
+  RawAddress peer_addr;
+} tBTA_AV_API_CANCEL_AVRC_ALARM;
+
 /* data type for BTA_AV_API_RC_CLOSE_EVT */
 typedef struct {
   BT_HDR_RIGID hdr;
@@ -493,6 +501,7 @@ union tBTA_AV_DATA {
   tBTA_AV_API_META_RSP api_meta_rsp;
   tBTA_AV_API_STATUS_RSP api_status_rsp;
   tBTA_AV_API_PEER_SEP peer_sep;
+  tBTA_AV_API_CANCEL_AVRC_ALARM cancel_avrc_alarm;
 };
 
 typedef union {
@@ -828,6 +837,7 @@ void bta_av_rc_remote_cmd(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data);
 void bta_av_rc_vendor_cmd(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data);
 void bta_av_rc_vendor_rsp(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data);
 void bta_av_rc_msg(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data);
+void bta_av_cancel_avrc_alarm(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data);
 void bta_av_rc_close(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data);
 void bta_av_rc_meta_rsp(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data);
 void bta_av_rc_free_rsp(tBTA_AV_CB* p_cb, tBTA_AV_DATA* p_data);

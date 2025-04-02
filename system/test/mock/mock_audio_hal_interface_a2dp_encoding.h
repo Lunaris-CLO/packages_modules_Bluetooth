@@ -176,6 +176,16 @@ struct is_hal_offloading {
 };
 extern struct is_hal_offloading is_hal_offloading;
 
+// Name: is_offload_session_unknown
+// Params:
+// Return: bool
+struct is_offload_session_unknown {
+  static bool return_value;
+  std::function<bool()> body{[]() { return return_value; }};
+  bool operator()() { return body(); };
+};
+extern struct is_offload_session_unknown is_offload_session_unknown;
+
 // Name: is_opus_supported
 // Params:
 // Return: bool
