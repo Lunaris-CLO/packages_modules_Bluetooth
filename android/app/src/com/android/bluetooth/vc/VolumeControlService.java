@@ -77,8 +77,6 @@ public class VolumeControlService extends ProfileService {
     // Timeout for state machine thread join, to prevent potential ANR.
     private static final int SM_THREAD_JOIN_TIMEOUT_MS = 1000;
 
-    // Upper limit of all VolumeControl devices: Bonded or Connected
-    private static final int MAX_VC_STATE_MACHINES = 10;
     private static final int LE_AUDIO_MAX_VOL = 255;
     private static final String ACTION_CHANGE_MUTE =
             "com.android.bluetooth.vc.test.action.CHANGE_MUTE";
@@ -1250,14 +1248,7 @@ public class VolumeControlService extends ProfileService {
             if (sm != null) {
                 return sm;
             }
-            // Limit the maximum number of state machines to avoid DoS attack
-            if (mStateMachines.size() >= MAX_VC_STATE_MACHINES) {
-                Log.e(
-                        TAG,
-                        "Maximum number of VolumeControl state machines reached: "
-                                + MAX_VC_STATE_MACHINES);
-                return null;
-            }
+
             Log.d(TAG, "Creating a new state machine for " + device);
             sm =
                     VolumeControlStateMachine.make(

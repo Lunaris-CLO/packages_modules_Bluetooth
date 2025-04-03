@@ -1443,6 +1443,7 @@ package android.bluetooth.le {
     method public long getTimestampNanos();
     method public int getTxPower();
     method public boolean isConnectable();
+    method public boolean isDirected();
     method public boolean isLegacy();
     method public void writeToParcel(android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.bluetooth.le.ScanResult> CREATOR;

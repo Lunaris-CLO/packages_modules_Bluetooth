@@ -1153,8 +1153,13 @@ void btm_sco_connection_failed(tHCI_STATUS hci_status, const RawAddress& bda,
             p->state = SCO_ST_PEND_ROLECHANGE;
             break;
           case HCI_ERR_LMP_ERR_TRANS_COLLISION:
-            /* Avoid calling disconnect callback because of sco creation race
+            /* Call disconnect callback to allow SCO state machine move to proper state.
+             * In case of LMP_ERR_TRANS_COLLISION, SCO state machine remains stuck in
+             * SCO_ST_CONNECTING (BTA state machine in SCO_OPENING_ST).
+             * Need to call SCO disconnect callback in such case to recover SCO states.
              */
+            p->state = SCO_ST_UNUSED;
+            (*p->p_disc_cb)(xx);
             break;
           default: /* Notify client about SCO failure */
             p->state = SCO_ST_UNUSED;

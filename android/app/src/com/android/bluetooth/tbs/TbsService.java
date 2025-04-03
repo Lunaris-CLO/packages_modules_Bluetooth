@@ -215,6 +215,30 @@ public class TbsService extends ProfileService {
         mTbsGeneric.setInbandRingtoneSupport(device);
     }
 
+    public void updateBearerSignalStrength(int bearerSignal) {
+        if (mTbsGeneric == null) {
+            Log.i(TAG, "updateBearerSignalStrength, mTbsGeneric not available");
+            return;
+        }
+        mTbsGeneric.updateBearerSignalStrength(bearerSignal);
+    }
+
+    public void updateBearerTechnology(int bearertech) {
+         if (mTbsGeneric == null) {
+            Log.i(TAG, "updateBearerTechnology, mTbsGeneric not available");
+            return;
+        }
+        mTbsGeneric.updateBearerTechnology(bearertech);
+    }
+
+    public void updateBearerName(String bearerName) {
+         if (mTbsGeneric == null) {
+            Log.i(TAG, "updateBearerName, mTbsGeneric not available");
+            return;
+        }
+        mTbsGeneric.updateBearerName(bearerName);
+    }
+
     /**
      * Clear inband ringtone for the device. When set, notification will be sent to given device.
      *

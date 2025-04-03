@@ -161,6 +161,6 @@ where
 {
     let ret = MAIN_THREAD_TX.with(|tx| tx.send(MainThreadTxMessage::Callback(Box::new(f))));
     if ret.is_err() {
-        panic!("Rust call failed");
+        warn!("Rust call failed");
     }
 }

@@ -554,6 +554,7 @@ public class A2dpService extends ProfileService {
         synchronized (mActiveSwitchingGuard) {
             BluetoothDevice previousActiveDevice = null;
             synchronized (mStateMachines) {
+            Log.d(TAG," removeActiveDevice(): mActiveDevice: " + mActiveDevice);
                 if (mActiveDevice == null) return true;
                 previousActiveDevice = mActiveDevice;
                 mActiveDevice = null;
@@ -1242,7 +1243,6 @@ public class A2dpService extends ProfileService {
                 Log.e(TAG, "Callback called when LeAudioService is stopped");
                 return;
             }
-            String mRemovedDevice = "";
             synchronized (mStateMachines) {
                 for (AudioDeviceInfo deviceInfo : removedDevices) {
                     if (deviceInfo.getType() != AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) {
@@ -1255,7 +1255,6 @@ public class A2dpService extends ProfileService {
                     }
 
                     mExposedActiveDevice = null;
-                    mRemovedDevice = address.substring(12);
                     Log.d(
                             TAG,
                             " onAudioDevicesRemoved: "
@@ -1265,20 +1264,6 @@ public class A2dpService extends ProfileService {
                                     + ", mActiveDevice: "
                                     + mActiveDevice);
                 }
-            }
-            BluetoothDevice mPendingFallbackDevice = mAdapterService
-                                                                .getActiveDeviceManager()
-                                                                .getA2dpFallbackDevice();
-            String mPendingFallbackDeviceString = "";
-            if (mPendingFallbackDevice != null) {
-                mPendingFallbackDeviceString = mPendingFallbackDevice.toString().substring(12);
-            }
-
-            Log.d(TAG, "onAudioDevicesRemoved: mPendingFallbackDevice" +
-                        mPendingFallbackDeviceString + ", removedDevices: " + mRemovedDevice);
-            if (mPendingFallbackDevice != null & !mRemovedDevice.equals(mPendingFallbackDeviceString)) {
-                Log.d(TAG, "onAudioDevicesRemoved: setActiveDevice");
-                setActiveDevice(mPendingFallbackDevice);
             }
         }
     }
@@ -1521,9 +1506,15 @@ public class A2dpService extends ProfileService {
     /** Retrieves the most recently connected device in the A2DP connected devices list. */
     public BluetoothDevice getFallbackDevice() {
         DatabaseManager dbManager = mAdapterService.getDatabase();
-        return dbManager != null
-                ? dbManager.getMostRecentlyConnectedDevicesInList(getConnectedDevices())
-                : null;
+        if (dbManager != null) {
+            BluetoothDevice mostRecentDevice =
+                dbManager
+                    .getMostRecentlyConnectedDevicesInList(getConnectedDevices());
+            if (mostRecentDevice != null) {
+                return mostRecentDevice.equals(getActiveDevice()) ? null : mostRecentDevice;
+            }
+        }
+        return null;
     }
 
     /** Binder object: must be a static class or memory leak may occur. */

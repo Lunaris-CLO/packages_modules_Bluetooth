@@ -871,6 +871,10 @@ public class RemoteDevices {
             deviceProperties = getDeviceProperties(bdDevice);
         }
 
+        if (deviceProperties == null) {
+          Log.d(TAG, "deviceProperties is null, return");
+          return;
+        }
         if (types.length <= 0) {
             errorLog("No properties to update");
             return;

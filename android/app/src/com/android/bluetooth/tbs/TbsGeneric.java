@@ -256,6 +256,29 @@ public class TbsGeneric {
         mTbsGatt.setInbandRingtoneFlag(device);
     }
 
+    public synchronized void updateBearerSignalStrength(int bearerSignal) {
+        if (mTbsGatt == null) {
+            Log.w(TAG, "updateBearerSignalStrength, mTbsGatt is null");
+            return;
+        }
+        mTbsGatt.updateBearerSignalStrength(bearerSignal);
+    }
+
+    public synchronized void updateBearerTechnology(int bearertech) {
+        if (mTbsGatt == null) {
+            Log.w(TAG, "updateBearerTechnology, mTbsGatt is null");
+            return;
+        }
+        mTbsGatt.setBearerTechnology(bearertech);
+    }
+
+    public synchronized void updateBearerName(String bearerName) {
+        if (mTbsGatt == null) {
+            Log.w(TAG, "updateBearerName, mTbsGatt is null");
+            return;
+        }
+        mTbsGatt.updateBearerName(bearerName);
+    }
     /**
      * Clear inband ringtone for the device. When set, notification will be sent to given device.
      *

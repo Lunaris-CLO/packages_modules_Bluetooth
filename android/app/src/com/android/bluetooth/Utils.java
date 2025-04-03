@@ -98,6 +98,7 @@ public final class Utils {
     private static final String PTS_TEST_MODE_PROPERTY = "persist.bluetooth.pts";
     private static final String TMAP_PTS_MODE_PROPERTY = "persist.bluetooth.tmap.pts";
     private static final String BAP_NO_PACS_PTS_MODE_PROPERTY = "persist.bluetooth.bap.no.pacs.pts";
+    private static final String TBS_PTS_MODE_PROPERTY = "persist.bluetooth.tbs.pts";
 
     private static final String ENABLE_DUAL_MODE_AUDIO =
             "persist.bluetooth.enable_dual_mode_audio";
@@ -1139,6 +1140,16 @@ public final class Utils {
      */
     public static boolean isBapNoPacsPtsTestMode() {
         return SystemProperties.getBoolean(BAP_NO_PACS_PTS_MODE_PROPERTY, false);
+    }
+
+    /**
+     * Check if we are running in PTS TBS test mode. To enable/disable TBS PTS test mode, invoke
+     * {@code adb shell setprop persist.bluetooth.tbs.pts true/false}
+     *
+     * @return true if in PTS Test mode, false otherwise
+     */
+     public static boolean isTbsPtsTestMode() {
+        return SystemProperties.getBoolean(TBS_PTS_MODE_PROPERTY, false);
     }
 
     /**

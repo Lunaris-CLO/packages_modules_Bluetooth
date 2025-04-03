@@ -631,15 +631,14 @@ class BtifAvSource {
     // Restart the session if the codec for the active peer is updated
     A2dpCodecConfig* current_codec = bta_av_get_a2dp_current_codec();
 
-    if (current_codec == nullptr) {
-      log::warn("Current Codec null, returning.");
-      return;
-    }
-
     bool aptX_config_change = true;
     uint16_t cs4 = 0;
     for (auto cp : codec_preferences) {
       if (cp.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_APTX_ADAPTIVE) {
+        if (current_codec == nullptr) {
+           log::warn("Current Codec null, returning.");
+           return;
+        }
         btav_a2dp_codec_config_t codec_config;
         codec_config = current_codec->getCodecConfig();
         if (cp.codec_specific_4 > 0) {

@@ -427,8 +427,8 @@ class BroadcastStateMachineImpl : public BroadcastStateMachine {
 
   void TerminateBig() {
     log::info("suspending={}", suspending_);
-    /* Terminate with reason: Connection Terminated By Local Host */
-    IsoManager::GetInstance()->TerminateBig(GetAdvertisingSid(), 0x16);
+    /* Terminate with reason: Remote User Terminated Connection */
+    IsoManager::GetInstance()->TerminateBig(GetAdvertisingSid(), 0x13);
   }
 
   void OnSetupIsoDataPath(uint8_t status, uint16_t conn_hdl) override {

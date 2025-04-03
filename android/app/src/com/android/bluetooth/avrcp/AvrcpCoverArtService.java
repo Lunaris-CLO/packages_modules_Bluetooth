@@ -92,11 +92,13 @@ public class AvrcpCoverArtService {
     public boolean stop() {
         debug("Stopping service");
         stopBipServer();
-        synchronized (mClientsLock) {
-            for (ServerSession session : mClients.values()) {
-                session.close();
+        if(!mClients.isEmpty()) {
+            synchronized (mClientsLock) {
+                for (ServerSession session : mClients.values()) {
+                    session.close();
+                }
+                mClients.clear();
             }
-            mClients.clear();
         }
         mStorage.clear();
         return true;
@@ -222,6 +224,10 @@ public class AvrcpCoverArtService {
         debug("disconnect '" + device + "'");
         // Closing the server session closes the underlying transport, which closes the underlying
         // socket as well. No need to maintain and close anything else.
+        if(!mClients.containsKey(device))  {
+          debug("disconnect: device is already removed");
+          return;
+        }
         synchronized (mClientsLock) {
             if (mClients.containsKey(device)) {
                 mNativeInterface.setBipClientStatus(device, false);

@@ -184,6 +184,7 @@ public class LeAudioService extends ProfileService {
     boolean mBluetoothEnabled = false;
 
     private final static Object mScanCallbackLock = new Object();
+    private final static Object mAudioServersScannerLock = new Object();
 
     /**
      * During a call that has LE Audio -> HFP handover, the HFP device that is going to connect SCO
@@ -574,7 +575,9 @@ public class LeAudioService extends ProfileService {
         }
 
         stopAudioServersBackgroundScan();
-        mAudioServersScanner = null;
+        synchronized(mAudioServersScannerLock) {
+            mAudioServersScanner = null;
+        }
 
         // Don't wait for async call with INACTIVE group status, clean active
         // device for active group.
@@ -2029,6 +2032,7 @@ public class LeAudioService extends ProfileService {
         }
 
         notifyActiveDeviceChanged(device);
+        mAudioManager.setA2dpSuspended(false);
         return true;
     }
 
@@ -3121,22 +3125,24 @@ public class LeAudioService extends ProfileService {
     void stopAudioServersBackgroundScan() {
         Log.d(TAG, "stopAudioServersBackgroundScan");
 
-        if (mAudioServersScanner == null || mScanCallback == null) {
-            Log.d(TAG, "stopAudioServersBackgroundScan: already stopped");
-            return;
-        }
-
-        synchronized(mScanCallbackLock) {
-            try {
-                mAudioServersScanner.stopScan(mScanCallback);
-            } catch (IllegalStateException e) {
-                Log.e(TAG, "Fail to stop scanner, consider it stopped", e);
+        synchronized(mAudioServersScannerLock) {
+            if (mAudioServersScanner == null || mScanCallback == null) {
+                Log.d(TAG, "stopAudioServersBackgroundScan: already stopped");
+                return;
             }
+            synchronized(mScanCallbackLock) {
+                try {
+                    mAudioServersScanner.stopScan(mScanCallback);
+                } catch (IllegalStateException e) {
+                    Log.e(TAG, "Fail to stop scanner, consider it stopped", e);
+                }
 
-            /* Callback is the indicator for scanning being enabled */
-            Log.d(TAG, " stop scanning, make mScanCallback null");
-            mScanCallback = null;
+                /* Callback is the indicator for scanning being enabled */
+                Log.d(TAG, " stop scanning, make mScanCallback null");
+                mScanCallback = null;
+            }
         }
+
     }
 
     void startAudioServersBackgroundScan(boolean retry) {
@@ -3145,20 +3151,11 @@ public class LeAudioService extends ProfileService {
         if (!isScannerNeeded()) {
             return;
         }
-
-        if (mAudioServersScanner == null) {
-            mAudioServersScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
-            if (mAudioServersScanner == null) {
-                Log.e(TAG, "startAudioServersBackgroundScan: Could not get scanner");
-                return;
-            }
-        }
-
-        if (!retry) {
-            if (mScanCallback != null) {
-                Log.d(TAG, "startAudioServersBackgroundScan: Scanning already enabled");
-                return;
-            }
+        if (!retry && mScanCallback != null) {
+            Log.d(TAG, "startAudioServersBackgroundScan: Scanning already enabled");
+            return;
+        } else if(mScanCallback == null){
+            Log.d(TAG, "startAudioServersBackgroundScan: mScanCallback is null, reinitialize");
             mScanCallback = new AudioServerScanCallback();
         }
 
@@ -3182,12 +3179,23 @@ public class LeAudioService extends ProfileService {
                         .setPhy(BluetoothDevice.PHY_LE_1M)
                         .build();
 
-        try {
-            mAudioServersScanner.startScan(filterList, settings, mScanCallback);
-        } catch (IllegalStateException e) {
-            Log.e(TAG, "Fail to start scanner, consider it stopped", e);
-            mScanCallback = null;
+        synchronized(mAudioServersScannerLock) {
+            if (mAudioServersScanner == null) {
+                Log.d(TAG, " mAudioServersScanner is null, get new scanner");
+                mAudioServersScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
+                if (mAudioServersScanner == null) {
+                    Log.e(TAG, "startAudioServersBackgroundScan: Could not get scanner");
+                    return;
+                }
+            }
+            try {
+                mAudioServersScanner.startScan(filterList, settings, mScanCallback);
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "Fail to start scanner, consider it stopped", e);
+                mScanCallback = null;
+            }
         }
+
     }
 
     void transitionFromBroadcastToUnicast() {

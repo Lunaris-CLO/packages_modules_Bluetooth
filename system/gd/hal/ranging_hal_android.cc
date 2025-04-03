@@ -48,6 +48,7 @@ using aidl::android::hardware::bluetooth::ranging::StepTonePct;
 using aidl::android::hardware::bluetooth::ranging::VendorSpecificData;
 using aidl::android::hardware::bluetooth::ranging::ModeType;
 using aidl::android::hardware::bluetooth::ranging::Reason;
+using aidl::android::hardware::bluetooth::ranging::Nadm;
 
 namespace bluetooth {
 namespace hal {
@@ -232,6 +233,8 @@ class RangingHalAndroid : public RangingHal {
     std::vector<uint8_t> initpacketRssiDbm_;
     std::vector<uint8_t> reflpacketQuality_;
     std::vector<uint8_t> reflpacketRssiDbm_;
+    std::vector<Nadm> packetNadmInitiator_;
+    std::vector<Nadm> packetNadmReflector_;
     std::vector<int> toaTodInitiator_;
     std::vector<int> todToaReflector_;
     hal_raw_data.numAntennaPaths = raw_data.num_antenna_paths_;
@@ -245,32 +248,6 @@ class RangingHalAndroid : public RangingHal {
     log::error(" refl_packet_toa_tod_: {}, init_packet_toa_tod_ : {}",
         raw_data.tod_toa_reflectors_.size(),
         raw_data.toa_tod_initiators_.size());
-    for (uint8_t i = 0; i < raw_data.tone_pct_initiator_[0].size(); i++) {
-      StepTonePct step_tone_pct;
-      for (uint8_t j = 0; j < raw_data.tone_pct_initiator_.size(); j++) {
-        ComplexNumber complex_number;
-        complex_number.imaginary = raw_data.tone_pct_initiator_[j][i].imag();
-        complex_number.real = raw_data.tone_pct_initiator_[j][i].real();
-        step_tone_pct.tonePcts.emplace_back(complex_number);
-        step_tone_pct.toneQualityIndicator.emplace_back(raw_data.tone_quality_indicator_initiator_[j][i]);
-      }
-
-      // step_tone_pct.toneExtensionAntennaIndex = raw_data.antenna_permutation_index_initiator_[i];
-      hal_raw_data.initiatorData.stepTonePcts.value().emplace_back(step_tone_pct);
-    }
-
-    for (uint8_t i = 0; i < raw_data.tone_pct_reflector_[0].size(); i++) {
-      StepTonePct step_tone_pct;
-      for (uint8_t j = 0; j < raw_data.tone_pct_reflector_.size(); j++) {
-        ComplexNumber complex_number;
-        complex_number.imaginary = raw_data.tone_pct_reflector_[j][i].imag();
-        complex_number.real = raw_data.tone_pct_reflector_[j][i].real();
-        step_tone_pct.tonePcts.emplace_back(complex_number);
-        step_tone_pct.toneQualityIndicator.emplace_back(raw_data.tone_quality_indicator_reflector_[j][i]);
-      }
-      // step_tone_pct.toneExtensionAntennaIndex = raw_data.antenna_permutation_index_reflector_[i];
-      hal_raw_data.reflectorData.stepTonePcts.value().emplace_back(step_tone_pct);
-    }
 
     for (uint8_t i = 0; i < raw_data.tone_pct_initiator_.size(); i++) {
       StepTonePct step_tone_pct;
@@ -325,6 +302,16 @@ class RangingHalAndroid : public RangingHal {
     for (auto toaTodInitiator:raw_data.toa_tod_initiators_) {
       toaTodInitiator_.push_back(toaTodInitiator);
     }
+    for (auto packetNadmInitiator:raw_data.packet_nadm_initiator_) {
+      packetNadmInitiator_.push_back((Nadm)packetNadmInitiator);
+    }
+    for (auto packetNadmReflector:raw_data.packet_nadm_reflector_) {
+      packetNadmReflector_.push_back((Nadm)packetNadmReflector);
+    }
+
+    log::verbose("packet nadm size initiator: {}", packetNadmInitiator_.size());
+    log::verbose("packet nadm size reflector: {}", packetNadmReflector_.size());
+
     for (auto mode : raw_data.step_mode_) {
       enum ModeType type;
       switch (mode) {
@@ -351,7 +338,15 @@ class RangingHalAndroid : public RangingHal {
     hal_raw_data.reflectorData.packetQuality = reflpacketQuality_;
     hal_raw_data.toaTodInitiator = toaTodInitiator_;
     hal_raw_data.todToaReflector = todToaReflector_;
+    hal_raw_data.initiatorData.packetNadm = packetNadmInitiator_;
+    hal_raw_data.reflectorData.packetNadm = packetNadmReflector_;
     hal_raw_data.timestampMs = raw_data.timestampMs_;
+    log::verbose("initiator reference power: {}, reflector reference power: {}",
+                  raw_data.initiator_reference_power_level, raw_data.reflector_reference_power_level);
+    hal_raw_data.initiatorData.referencePowerDbm = raw_data.initiator_reference_power_level;
+    hal_raw_data.reflectorData.referencePowerDbm = raw_data.reflector_reference_power_level;
+    hal_raw_data.initiatorData.vendorSpecificCsSingleSidedata = raw_data.vendor_specific_cs_single_side_data;
+
     log::debug("frequencyCompensation:{} StepMode:{} packetRssiDbm:{}, packetQuality:{}, \
             measuredFreqOffset:{} AntennaPermutationIndex : {} \
         toaTodInitiator:{} todToaReflector:{}",
@@ -363,6 +358,7 @@ class RangingHalAndroid : public RangingHal {
             (uint16_t)hal_raw_data.initiatorData.vendorSpecificCsSingleSidedata->size(),
             (uint16_t)hal_raw_data.toaTodInitiator->size(),
             (uint16_t)hal_raw_data.todToaReflector->size());
+
     session_trackers_[connection_handle]->GetSession()->writeRawData(hal_raw_data);
   };
 

@@ -127,8 +127,9 @@ public class DistanceMeasurementManager {
                 startRssiTracker(tracker);
                 break;
             case DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_CHANNEL_SOUNDING:
-                if (!params.getDevice().isConnected()) {
-                    Log.e(TAG, "no le connection");
+                if (!mAdapterService.isLeChannelSoundingSupported()
+                        || !params.getDevice().isConnected()) {
+                    Log.e(TAG, "Device " + params.getDevice() + " is not connected");
                     invokeStartFail(
                             callback,
                             params.getDevice(),

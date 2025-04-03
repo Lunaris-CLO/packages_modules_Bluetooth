@@ -715,11 +715,15 @@ static void btif_hf_upstreams_evt(uint16_t event, char* p_param) {
         log::verbose(
             "AG final selected SWB codec is 0x{:02x} 0=Q0 4=Q1 6=Q2 7=Q3",
             p_data->val.num);
-      p_data->val.num = BTA_AG_SCO_APTX_SWB_SETTINGS_Q0;
-      log::verbose("p->data.num {}",p_data->val.num);
-      config_s = BTHF_SWB_YES;
-      log::verbose("codec {} and config {}", codec_s, config_s);
-      bt_hf_callbacks->SwbCallback(codec_s, config_s,
+        if (p_data->val.num  &  BTA_AG_SCO_APTX_SWB_SETTINGS_Q0_MASK) {
+            log::verbose("btif_hf override-Preferred Codec to SWB");
+            BTA_AgSetCodec(btif_hf_cb[idx].handle, BTA_AG_SCO_APTX_SWB_SETTINGS_Q0);
+        }
+        p_data->val.num = BTA_AG_SCO_APTX_SWB_SETTINGS_Q0;
+        log::verbose("p->data.num {}",p_data->val.num);
+        config_s = BTHF_SWB_YES;
+        log::verbose("codec {} and config {}", codec_s, config_s);
+        bt_hf_callbacks->SwbCallback(codec_s, config_s,
                                      &btif_hf_cb[idx].connected_bda);
       }
       break;

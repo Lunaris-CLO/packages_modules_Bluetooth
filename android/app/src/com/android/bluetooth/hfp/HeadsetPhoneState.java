@@ -25,14 +25,18 @@ import android.telephony.SignalStrength;
 import android.telephony.SignalStrengthUpdateRequest;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionManager.OnSubscriptionsChangedListener;
+import android.telephony.SubscriptionInfo;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.android.internal.annotations.VisibleForTesting;
 
+import com.android.bluetooth.Utils;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
@@ -69,6 +73,16 @@ public class HeadsetPhoneState {
     private String mCindNumber;
     //Current Phone Number Type
     private int mType = 0;
+
+    public static final int BEARER_TECHNOLOGY_3G = 0x01;
+    public static final int BEARER_TECHNOLOGY_4G = 0x02;
+    public static final int BEARER_TECHNOLOGY_LTE = 0x03;
+    public static final int BEARER_TECHNOLOGY_WIFI = 0x04;
+    public static final int BEARER_TECHNOLOGY_5G = 0x05;
+    public static final int BEARER_TECHNOLOGY_GSM = 0x06;
+    public static final int BEARER_TECHNOLOGY_CDMA = 0x07;
+    public static final int BEARER_TECHNOLOGY_2G = 0x08;
+    public static final int BEARER_TECHNOLOGY_WCDMA = 0x09;
 
     private final HashMap<BluetoothDevice, Integer> mDeviceEventMap = new HashMap<>();
     private PhoneStateListener mPhoneStateListener;
@@ -155,6 +169,78 @@ public class HeadsetPhoneState {
             if (prevEvents != updatedEvents) {
                 stopListenForPhoneState();
                 startListenForPhoneState();
+            }
+            if (events != PhoneStateListener.LISTEN_NONE) {
+               //push these events on registeration
+               int networkType = mTelephonyManager.getDataNetworkType();
+               int dataNetworkType = BEARER_TECHNOLOGY_GSM;
+               switch (networkType) {
+                  case TelephonyManager.NETWORK_TYPE_UNKNOWN:
+                  case TelephonyManager.NETWORK_TYPE_GSM:
+                      Log.d(TAG, "inside GSM case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_GSM;
+                  break;
+                  case TelephonyManager.NETWORK_TYPE_GPRS:
+                      Log.d(TAG, "inside 2G case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_2G;
+                  break;
+                  case TelephonyManager.NETWORK_TYPE_EDGE:
+                  case TelephonyManager.NETWORK_TYPE_EVDO_0:
+                  case TelephonyManager.NETWORK_TYPE_EVDO_A:
+                  case TelephonyManager.NETWORK_TYPE_HSDPA:
+                  case TelephonyManager.NETWORK_TYPE_HSUPA:
+                  case TelephonyManager.NETWORK_TYPE_HSPA:
+                  case TelephonyManager.NETWORK_TYPE_IDEN:
+                  case TelephonyManager.NETWORK_TYPE_EVDO_B:
+                      Log.d(TAG, "inside 3G case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_3G;
+                  break;
+                  case TelephonyManager.NETWORK_TYPE_UMTS:
+                  case TelephonyManager.NETWORK_TYPE_TD_SCDMA:
+                      Log.d(TAG, "inside WCDMA case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_WCDMA;
+                  break;
+                  case TelephonyManager.NETWORK_TYPE_LTE:
+                      Log.d(TAG, "inside LTE case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_LTE;
+                  break;
+                  case TelephonyManager.NETWORK_TYPE_EHRPD:
+                  case TelephonyManager.NETWORK_TYPE_CDMA:
+                  case TelephonyManager.NETWORK_TYPE_1xRTT:
+                      Log.d(TAG, "inside CDMA case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_CDMA;
+                  break; 
+                  case TelephonyManager.NETWORK_TYPE_HSPAP:
+                      Log.d(TAG, "inside 4G case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_4G;
+                  break;
+                  case TelephonyManager.NETWORK_TYPE_IWLAN:
+                      Log.d(TAG, "inside WIFI case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_WIFI;
+                  break;
+                  case TelephonyManager.NETWORK_TYPE_NR:
+                      Log.d(TAG, "inside 5G case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_5G;
+                  break;
+                  default:
+                      Log.d(TAG, "inside default case:");
+                      dataNetworkType = BEARER_TECHNOLOGY_GSM;
+               }
+               //int networkType = mTelephonyManager.getNetworkType();
+               Log.d(TAG, "Adv Audio enabled: updateBearerTech:" +  dataNetworkType);
+               if (Utils.isTbsPtsTestMode()) {
+                  mHeadsetService.updateBearerTechnology(dataNetworkType);
+                  if (mSubscriptionManager != null) {
+                     List<SubscriptionInfo> subInfos = mSubscriptionManager.getActiveSubscriptionInfoList();
+                     if (subInfos == null || subInfos.isEmpty()) {
+                        Log.d(TAG, "no subs info");
+                        return;
+                     }
+                     SubscriptionInfo mFirstSubInfo = subInfos.get(0);
+                     Log.d(TAG, "updateBearerName " + mFirstSubInfo.getDisplayName().toString());
+                     mHeadsetService.updateBearerName(mFirstSubInfo.getDisplayName().toString());
+                  }
+               }
             }
         }
     }
@@ -319,6 +405,75 @@ public class HeadsetPhoneState {
                 }
                 stopListenForPhoneState();
                 startListenForPhoneState();
+                int networkType = mTelephonyManager.getDataNetworkType();
+                int dataNetworkType = BEARER_TECHNOLOGY_GSM;
+                switch (networkType) {
+                   case TelephonyManager.NETWORK_TYPE_UNKNOWN:
+                   case TelephonyManager.NETWORK_TYPE_GSM:
+                       Log.d(TAG, "inside GSM case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_GSM;
+                   break;
+                   case TelephonyManager.NETWORK_TYPE_GPRS:
+                       Log.d(TAG, "inside 2G case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_2G;
+                   break;
+                   case TelephonyManager.NETWORK_TYPE_EDGE:
+                   case TelephonyManager.NETWORK_TYPE_EVDO_0:
+                   case TelephonyManager.NETWORK_TYPE_EVDO_A:
+                   case TelephonyManager.NETWORK_TYPE_HSDPA:
+                   case TelephonyManager.NETWORK_TYPE_HSUPA:
+                   case TelephonyManager.NETWORK_TYPE_HSPA:
+                   case TelephonyManager.NETWORK_TYPE_IDEN:
+                   case TelephonyManager.NETWORK_TYPE_EVDO_B:
+                       Log.d(TAG, "inside 3G case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_3G;
+                   break;
+                   case TelephonyManager.NETWORK_TYPE_UMTS:
+                   case TelephonyManager.NETWORK_TYPE_TD_SCDMA:
+                       Log.d(TAG, "inside WCDMA case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_WCDMA;
+                   break;
+                   case TelephonyManager.NETWORK_TYPE_LTE:
+                       Log.d(TAG, "inside LTE case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_LTE;
+                   break;
+                   case TelephonyManager.NETWORK_TYPE_EHRPD:
+                   case TelephonyManager.NETWORK_TYPE_CDMA:
+                   case TelephonyManager.NETWORK_TYPE_1xRTT:
+                       Log.d(TAG, "inside CDMA case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_CDMA;
+                   break;
+                   case TelephonyManager.NETWORK_TYPE_HSPAP:
+                       Log.d(TAG, "inside 4G case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_4G;
+                   break;
+                   case TelephonyManager.NETWORK_TYPE_IWLAN:
+                       Log.d(TAG, "inside WIFI case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_WIFI;
+                   break;
+                   case TelephonyManager.NETWORK_TYPE_NR:
+                       Log.d(TAG, "inside 5G case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_5G;
+                   break;
+                   default:
+                       Log.d(TAG, "inside default case:");
+                       dataNetworkType = BEARER_TECHNOLOGY_GSM;
+                }
+               //int networkType = mTelephonyManager.getNetworkType();
+               Log.d(TAG, "Adv Audio enabled: updateBearerTech:" + dataNetworkType);
+               if (Utils.isTbsPtsTestMode()) {
+                  mHeadsetService.updateBearerTechnology(dataNetworkType);
+                  if (mSubscriptionManager != null) {
+                     List<SubscriptionInfo> subInfos = mSubscriptionManager.getActiveSubscriptionInfoList();
+                     if (subInfos == null || subInfos.isEmpty()) {
+                        Log.d(TAG, "no subs info");
+                        return;
+                     }
+                     SubscriptionInfo mFirstSubInfo = subInfos.get(0);
+                     Log.d(TAG, "updateBearerName " +  mFirstSubInfo.getDisplayName().toString());
+                     mHeadsetService.updateBearerName(mFirstSubInfo.getDisplayName().toString());
+                  }
+               }
             }
         }
     }

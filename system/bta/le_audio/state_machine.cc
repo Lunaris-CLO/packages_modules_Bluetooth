@@ -247,10 +247,10 @@ using bluetooth::le_audio::types::DataPathState;
 using bluetooth::le_audio::types::LeAudioContextType;
 using bluetooth::le_audio::types::LeAudioCoreCodecConfig;
 
-void parseVSMetadata(uint8_t total_len, std::vector<uint8_t> metadata,
+void parseVSMetadata(uint8_t total_len, std::vector<uint8_t>& metadata,
                      uint8_t cig_id, uint8_t cis_id, struct ase* ase) {
   LOG(INFO) << __func__ ;
-  uint8_t* p = metadata.data();
+  const uint8_t* p = metadata.data();
   uint8_t ltv_len, ltv_type;
   uint8_t processed_len = 0;
   std::vector<uint8_t> vs_meta_data;
@@ -275,7 +275,7 @@ void parseVSMetadata(uint8_t total_len, std::vector<uint8_t> metadata,
       LOG(INFO) << ": company_id = " << loghex(company_id);
       processed_len += 2;
       ltv_len -= 3; //company id and ltv_type
-      while(ltv_len) {
+      while(ltv_len > 0) {
         STREAM_TO_UINT8(vs_meta_data_len, p);
         LOG(INFO) << __func__ << ": vs_meta_data_len = " << loghex(vs_meta_data_len);
         processed_len++;
@@ -292,7 +292,7 @@ void parseVSMetadata(uint8_t total_len, std::vector<uint8_t> metadata,
           vs_meta_data.resize(vs_meta_data_len - 1);
           STREAM_TO_ARRAY(vs_meta_data.data(), p, vs_meta_data_len - 1); // "ltv_len - 1" because 1B for type
           LOG(INFO) << __func__ << ": STREAM_TO_ARRAY done ";
-          processed_len += static_cast<int> (sizeof(vs_meta_data));
+          processed_len += vs_meta_data_len - 1;
           if (ase->state == AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING) {
             LOG(INFO) << __func__ << ": straight away call UpdateEncoderParams ";
             UpdateEncoderParams(cig_id, cis_id, vs_meta_data, 0xFF);
@@ -301,7 +301,6 @@ void parseVSMetadata(uint8_t total_len, std::vector<uint8_t> metadata,
             ase->vs_metadata = vs_meta_data;
             ase->is_vsmetadata_available = true;
           }
-          vs_meta_data.clear();
         } else {
           (p) += (vs_meta_data_len - 1); //just ignore and increase pointer
           processed_len += (vs_meta_data_len - 1);

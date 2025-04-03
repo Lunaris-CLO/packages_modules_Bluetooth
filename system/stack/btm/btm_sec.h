@@ -42,7 +42,7 @@
 #define BTM_SEC_MAX_COLLISION_DELAY (5000)
 
 
-#define BTM_SEC_CONN_PROC_TIMEOUT_MS (5 * 1000)
+#define BTM_SEC_CONN_PROC_TIMEOUT_MS (2900)  /* 2.9 sec timer to acquire wakelock */
 
 /*******************************************************************************
  *

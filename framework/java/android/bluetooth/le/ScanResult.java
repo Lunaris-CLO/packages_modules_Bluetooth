@@ -59,6 +59,9 @@ public final class ScanResult implements Parcelable, Attributable {
     /** Mask for checking whether event type represents connectable advertisement. */
     private static final int ET_CONNECTABLE_MASK = 0x01;
 
+    /** Mask for checking whether event type represents directed advertisement. */
+    private static final int ET_DIRECTED_MASK = 0x04;
+
     // Remote Bluetooth device.
     private BluetoothDevice mDevice;
 
@@ -272,6 +275,12 @@ public final class ScanResult implements Parcelable, Attributable {
     /** Returns true if this object represents connectable scan result. */
     public boolean isConnectable() {
         return (mEventType & ET_CONNECTABLE_MASK) != 0;
+    }
+
+    /** Returns true if the advertisement received is directed.
+     */
+    public boolean isDirected() {
+        return (mEventType & ET_DIRECTED_MASK) != 0;
     }
 
     /**

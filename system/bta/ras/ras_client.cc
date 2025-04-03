@@ -49,8 +49,10 @@ static constexpr uint16_t kFirstSegmentRangingDataTimeoutMs = 5000;
 static constexpr uint16_t kFirstSegmentRangingDataTimeoutMs_lowpower = 10000;
 static constexpr uint16_t kFollowingSegmentTimeoutMs = 1000;
 static constexpr uint16_t kRangingDataReadyTimeoutMs = 5000;
+static constexpr uint16_t kInvalidConnInterval = 0;  // valid value is from 0x0006 to 0x0C0
 
 class RasClientImpl : public bluetooth::ras::RasClient {
+
 public:
   struct GattReadCallbackData {
     const bool is_last_;
@@ -89,6 +91,7 @@ public:
     alarm_t* ranging_data_timeout_timer_ = nullptr;
     RangingType ranging_type_ = RANGING_TYPE_NONE;
     TimeoutType timeout_type_ = TIMEOUT_NONE;
+    uint16_t conn_interval_ = kInvalidConnInterval;
 
     const gatt::Characteristic* FindCharacteristicByUuid(Uuid uuid) {
       for (auto& characteristic : service_->characteristics) {
@@ -167,7 +170,7 @@ public:
         SetTimeOutAlarm(tracker, kFirstSegmentRangingDataTimeoutMs, TimeoutType::FIRST_SEGMENT);
       }
       callbacks_->OnConnected(address, real_time_att_handle,
-                              tracker->vendor_specific_characteristics_);
+                              tracker->vendor_specific_characteristics_, tracker->conn_interval_);
       return;
     }
     BTA_GATTC_Open(gatt_if_, ble_bd_addr.bda, BTM_BLE_DIRECT_CONNECTION, true);
@@ -214,9 +217,23 @@ public:
       case BTA_GATTC_NOTIF_EVT: {
         OnGattNotification(p_data->notify);
       } break;
+      case BTA_GATTC_CONN_UPDATE_EVT: {
+        OnConnUpdated(p_data->conn_update);
+      } break;
       default:
         log::warn("Unhandled event: {}", gatt_client_event_text(event));
     }
+  }
+
+  void OnConnUpdated(const tBTA_GATTC_CONN_UPDATE& evt) const {
+    auto tracker = FindTrackerByHandle(evt.conn_id);
+    if (tracker == nullptr) {
+      log::debug("no ongoing measurement, skip");
+      return;
+    }
+    tracker->conn_interval_ = evt.interval;
+    log::info("conn interval is updated as {}", evt.interval);
+    callbacks_->OnConnIntervalUpdated(tracker->address_for_cs_, tracker->conn_interval_);
   }
 
   void OnGattConnected(const tBTA_GATTC_OPEN& evt) {
@@ -745,7 +762,7 @@ public:
     uint16_t real_time_att_handle =
             characteristic == nullptr ? kInvalidGattHandle : characteristic->value_handle;
     callbacks_->OnConnected(tracker->address_for_cs_, real_time_att_handle,
-                            tracker->vendor_specific_characteristics_);
+                            tracker->vendor_specific_characteristics_, tracker->conn_interval_);
   }
 
   void StoreCachedData(std::shared_ptr<RasTracker> tracker) {

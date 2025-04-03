@@ -28,6 +28,8 @@
 
 #include <algorithm>
 
+#include <base/functional/bind.h>
+#include <com_android_bluetooth_flags.h>
 #include "bta/include/bta_api_data_types.h"
 #include "bta/include/bta_sec_api.h"
 #include "btif_storage.h"
@@ -37,6 +39,7 @@
 #include "osi/include/allocator.h"
 #include "stack/btm/btm_sec.h"
 #include "stack/include/acl_api.h"
+#include "stack/include/main_thread.h"
 #include "types/ble_address_with_type.h"
 #include "types/bluetooth/uuid.h"
 #include "types/bt_transport.h"
@@ -97,7 +100,15 @@ void btif_gatt_check_encrypted_link(RawAddress bd_addr,
       !btif_gatt_is_link_encrypted(bd_addr)) {
     log::debug("Checking gatt link peer:{} transport:{}", bd_addr,
                bt_transport_text(transport_link));
-    BTA_DmSetEncryption(bd_addr, transport_link, &btif_gatt_set_encryption_cb,
-                        BTM_BLE_SEC_ENCRYPT);
+    if (com::android::bluetooth::flags::synchronous_bta_sec()) {
+      // If synchronous_bta_sec is enabled, then enable encryption in main thread
+      do_in_main_thread(
+          FROM_HERE,
+          base::BindOnce(BTA_DmSetEncryption, bd_addr, transport_link,
+                         &btif_gatt_set_encryption_cb, BTM_BLE_SEC_ENCRYPT));
+    } else {
+      BTA_DmSetEncryption(bd_addr, transport_link, &btif_gatt_set_encryption_cb,
+                          BTM_BLE_SEC_ENCRYPT);
+    }
   }
 }

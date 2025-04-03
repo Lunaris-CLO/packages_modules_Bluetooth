@@ -651,7 +651,10 @@ bool ParsePacs(std::vector<struct acs_ac_record>& pac_recs, uint16_t len,
   pac_recs.reserve(pac_rec_nb);
   for (int i = 0; i < pac_rec_nb; i++) {
     int remaining_len = ParseSinglePac(pac_recs, len, value);
-    if (remaining_len < 0) return false;
+    if (remaining_len < 0) {
+      log::error("Error parsing PAC records.");
+      break;
+    }
 
     value += (len - remaining_len);
     len = remaining_len;
