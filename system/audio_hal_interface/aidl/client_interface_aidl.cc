@@ -426,6 +426,7 @@ bool BluetoothAudioClientInterface::SetAllowedLatencyModes(
 }
 
 int BluetoothAudioClientInterface::StartSession() {
+  log::info("StartSession");
   std::lock_guard<std::mutex> guard(internal_mutex_);
   if (provider_ == nullptr) {
     log::error("BluetoothAudioHal nullptr");
@@ -493,6 +494,7 @@ int BluetoothAudioClientInterface::StartSession() {
 
 void BluetoothAudioClientInterface::StreamStarted(
     const BluetoothAudioCtrlAck& ack) {
+  log::info("StreamStarted");
   if (provider_ == nullptr) {
     log::error("BluetoothAudioHal nullptr");
     return;
@@ -512,6 +514,7 @@ void BluetoothAudioClientInterface::StreamStarted(
 
 void BluetoothAudioClientInterface::StreamSuspended(
     const BluetoothAudioCtrlAck& ack) {
+  log::info("StreamSuspended");
   if (provider_ == nullptr) {
     log::error("BluetoothAudioHal nullptr");
     return;
@@ -530,6 +533,7 @@ void BluetoothAudioClientInterface::StreamSuspended(
 }
 
 int BluetoothAudioClientInterface::EndSession() {
+  log::info("EndSession");
   std::lock_guard<std::mutex> guard(internal_mutex_);
   if (!session_started_) {
     log::info("session ended already");

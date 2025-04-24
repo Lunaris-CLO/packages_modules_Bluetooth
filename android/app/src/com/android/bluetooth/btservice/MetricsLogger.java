@@ -24,6 +24,7 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 import android.util.proto.ProtoOutputStream;
+import android.bluetooth.BluetoothClass;
 
 import androidx.annotation.RequiresApi;
 
@@ -316,14 +317,13 @@ public class MetricsLogger {
                 getAllowlistedDeviceNameHash(device.getName()));
 
         // write COD
+        BluetoothClass deviceClass = device.getBluetoothClass();
         writeFieldIfNotNull(
                 proto,
                 ProtoOutputStream.FIELD_TYPE_INT32,
                 ProtoOutputStream.FIELD_COUNT_SINGLE,
                 BluetoothRemoteDeviceInformation.CLASS_OF_DEVICE_FIELD_NUMBER,
-                device.getBluetoothClass() != null
-                        ? device.getBluetoothClass().getClassOfDevice()
-                        : null);
+                (deviceClass != null) ? deviceClass.getClassOfDevice() : null);
 
         // write OUI
         writeFieldIfNotNull(

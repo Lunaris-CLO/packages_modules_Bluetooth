@@ -877,6 +877,8 @@ public class TbsGeneric {
         if (args.length == 0) {
             Log.d(TAG, "processCallControlOp(): Invalid length");
             opResult =TbsGatt.CALL_CONTROL_POINT_RESULT_OPERATION_NOT_POSSIBLE;
+            mTbsGatt.setCallControlPointResult(device, opcode, 0, opResult);
+            return;
         }
 
         int callIndex = args[0];
@@ -884,6 +886,8 @@ public class TbsGeneric {
         if (entry == null) {
             Log.d(TAG, "processCallControlOp(): call id is null");
             opResult = TbsGatt.CALL_CONTROL_POINT_RESULT_INVALID_CALL_INDEX;
+            mTbsGatt.setCallControlPointResult(device, opcode, 0, opResult);
+            return;
         }
 
         TbsCall call = mCurrentCallsList.get(callIndex);
@@ -891,6 +895,8 @@ public class TbsGeneric {
         if (call != null && !isCallStateTransitionValid(call.getState(), opcode)) {
             Log.d(TAG, "processCallControlOp(): ccp state mismatch");
             opResult = TbsGatt.CALL_CONTROL_POINT_RESULT_STATE_MISMATCH;
+            mTbsGatt.setCallControlPointResult(device, opcode, 0, opResult);
+            return;
         }
 
         Bearer bearer = entry.getValue();

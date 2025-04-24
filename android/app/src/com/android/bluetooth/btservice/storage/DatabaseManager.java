@@ -786,7 +786,9 @@ public class DatabaseManager {
      */
     public BluetoothDevice getMostRecentlyConnectedDevicesInList(
             List<BluetoothDevice> devicesList) {
+        Log.d(TAG, "getMostRecentlyConnectedDevicesInList");
         if (devicesList == null) {
+            Log.d(TAG, "getMostRecentlyConnectedDevicesInList, devicesList is null");
             return null;
         }
 
@@ -794,6 +796,7 @@ public class DatabaseManager {
         long mostRecentLastActiveTime = -1;
         synchronized (mMetadataCache) {
             for (BluetoothDevice device : devicesList) {
+                Log.v(TAG, "getMostRecentlyConnectedDevicesInList, device: " + device);
                 String address = device.getAddress();
                 Metadata metadata = mMetadataCache.get(address);
                 if (metadata != null
@@ -804,6 +807,7 @@ public class DatabaseManager {
                 }
             }
         }
+        Log.d(TAG, "getMostRecentlyConnectedDevicesInList, mostRecentDevice: " + mostRecentDevice);
         return mostRecentDevice;
     }
 

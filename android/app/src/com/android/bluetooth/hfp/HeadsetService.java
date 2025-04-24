@@ -1526,17 +1526,7 @@ public class HeadsetService extends ProfileService {
               Log.w(TAG, "removeActiveDevice: Already active device set to null.");
               return;
             }
-            // As per b/202602952, if we remove the active device due to a disconnection,
-            // we need to check if another device is connected and set it active instead.
-            // Calling this before any other active related calls has the same effect as
-            // a classic active device switch.
-            BluetoothDevice fallbackDevice = getFallbackDevice();
-            if (fallbackDevice != null
-                    && mActiveDevice != null
-                    && getConnectionState(mActiveDevice) != BluetoothProfile.STATE_CONNECTED) {
-                setActiveDevice(fallbackDevice);
-                return;
-            }
+
             // Clear the active device
             if (mVoiceRecognitionStarted) {
                 if (!stopVoiceRecognition(mActiveDevice)) {

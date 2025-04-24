@@ -428,11 +428,6 @@ public class LeAudioNativeInterface {
         setGroupAllowedContextMaskNative(groupId, sinkContextTypes, sourceContextTypes);
     }
 
-    public void updateCallAudioRoute(int callAudioRoute) {
-        Log.d(TAG, "updateCallAudioRoute callAudioRoute: " + callAudioRoute);
-        updateCallAudioRouteNative(callAudioRoute);
-    }
-
     // Native methods that call into the JNI interface
     private native void initNative(BluetoothLeAudioCodecConfig[] codecConfigOffloading);
 
@@ -469,6 +464,4 @@ public class LeAudioNativeInterface {
 
     private native void setGroupAllowedContextMaskNative(
             int groupId, int sinkContextTypes, int sourceContextTypes);
-
-    private native void updateCallAudioRouteNative(int callAudioRoute);
 }

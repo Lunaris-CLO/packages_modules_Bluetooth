@@ -3392,7 +3392,15 @@ public class GattService extends ProfileService {
 
         Log.d(TAG, "removeService() - handle=" + handle);
 
-        mNativeInterface.gattServerDeleteService(serverIf, handle);
+        if (mNativeInterface != null) {
+            mNativeInterface.gattServerDeleteService(serverIf, handle);
+        } else {
+            if (mAdapterService != null) {
+                int state = mAdapterService.getState();
+                Log.w(TAG, "removeService() -  Disallowed in BT state: " + state);
+            }
+        }
+
     }
 
     @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)

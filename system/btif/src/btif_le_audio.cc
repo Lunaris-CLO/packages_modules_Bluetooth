@@ -367,19 +367,6 @@ class LeAudioClientInterfaceImpl : public LeAudioClientInterface,
                            sink_context_types, source_context_types));
   }
 
-  void UpdateCallAudioRoute(int call_audio_route) {
-    if (!initialized || !LeAudioClient::IsLeAudioClientRunning()) {
-      log::verbose(
-          "updating call audio route ignored, due to already started cleanup"
-          " procedure or service being not read");
-      return;
-    }
-
-    do_in_main_thread(FROM_HERE,
-                      Bind(&LeAudioClient::UpdateCallAudioRoute,
-                           Unretained(LeAudioClient::Get()), call_audio_route));
-  }
-
  private:
   LeAudioClientCallbacks* callbacks;
 };

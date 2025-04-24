@@ -395,6 +395,7 @@ tA2DP_CTRL_CMD A2dpTransport::GetPendingCmd() const {
 }
 
 void A2dpTransport::ResetPendingCmd() {
+  log::info("ResetPendingCmd");
   a2dp_pending_cmd_ = A2DP_CTRL_CMD_NONE;
 }
 
@@ -918,6 +919,7 @@ void ack_stream_started(const tA2DP_CTRL_ACK& ack) {
     log::warn("pending={} ignore result={}", pending_cmd, ctrl_ack);
     return;
   }
+  log::verbose("ctrl_ack={}", ctrl_ack);
   if (ctrl_ack != BluetoothAudioCtrlAck::PENDING) {
     a2dp_sink->ResetPendingCmd();
   }
@@ -937,6 +939,7 @@ void ack_stream_suspended(const tA2DP_CTRL_ACK& ack) {
     log::warn("pending={} ignore result={}", pending_cmd, ctrl_ack);
     return;
   }
+  log::verbose("ctrl_ack={}", ctrl_ack);
   if (ctrl_ack != BluetoothAudioCtrlAck::PENDING) {
     a2dp_sink->ResetPendingCmd();
   }

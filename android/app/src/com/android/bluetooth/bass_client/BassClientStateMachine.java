@@ -139,6 +139,7 @@ public class BassClientStateMachine extends StateMachine {
 
     private boolean mIsAllowedList = false;
     private int mLastConnectionState = -1;
+    private boolean mBassConnected = false;
     @VisibleForTesting boolean mMTUChangeRequested = false;
     @VisibleForTesting boolean mDiscoveryInitiated = false;
     @VisibleForTesting BassClientService mService;
@@ -1086,6 +1087,7 @@ public class BassClientStateMachine extends StateMachine {
                     broadcastConnectionState(
                             mDevice, mLastConnectionState, BluetoothProfile.STATE_CONNECTED);
                     mLastConnectionState = BluetoothProfile.STATE_CONNECTED;
+                    mBassConnected = true;;
                 }
             }
         } else {
@@ -1174,9 +1176,9 @@ public class BassClientStateMachine extends StateMachine {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             boolean isStateChanged = false;
-            log("onConnectionStateChange : Status=" + status + "newState" + newState);
+            log("onConnectionStateChange : Status=" + status + ", newState=" + newState);
             if (newState == BluetoothProfile.STATE_CONNECTED
-                    && getConnectionState() != BluetoothProfile.STATE_CONNECTED) {
+                    && getConnectionState(true) != BluetoothProfile.STATE_CONNECTED) {
                 isStateChanged = true;
                 Log.w(TAG, "Bassclient Connected from Disconnected state: " + mDevice);
                 if (mService.okToConnect(mDevice)) {
@@ -1197,7 +1199,7 @@ public class BassClientStateMachine extends StateMachine {
                     newState = BluetoothProfile.STATE_DISCONNECTED;
                 }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED
-                    && getConnectionState() != BluetoothProfile.STATE_DISCONNECTED) {
+                    && getConnectionState(true) != BluetoothProfile.STATE_DISCONNECTED) {
                 isStateChanged = true;
                 log("Disconnected from Bass GATT server.");
             }
@@ -1570,6 +1572,7 @@ public class BassClientStateMachine extends StateMachine {
             clearCharsCache();
             mNextSourceId = 0;
             removeDeferredMessages(DISCONNECT);
+            mBassConnected = false;
             if (mLastConnectionState == -1) {
                 log("no Broadcast of initial profile state ");
             } else {
@@ -2511,7 +2514,7 @@ public class BassClientStateMachine extends StateMachine {
                 intent, BLUETOOTH_CONNECT, Utils.getTempBroadcastOptions().toBundle());
     }
 
-    int getConnectionState() {
+    int getConnectionState(boolean internal) {
         String currentState = "Unknown";
         if (getCurrentState() != null) {
             currentState = getCurrentState().getName();
@@ -2523,7 +2526,9 @@ public class BassClientStateMachine extends StateMachine {
                 return BluetoothProfile.STATE_CONNECTING;
             case "Connected":
             case "ConnectedProcessing":
-                return BluetoothProfile.STATE_CONNECTED;
+                return (internal || mBassConnected) ?
+                        BluetoothProfile.STATE_CONNECTED :
+                        BluetoothProfile.STATE_CONNECTING;
             default:
                 Log.e(TAG, "Bad currentState: " + currentState);
                 return BluetoothProfile.STATE_DISCONNECTED;

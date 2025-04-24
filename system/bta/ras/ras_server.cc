@@ -331,7 +331,7 @@ public:
     ranging_data_overwritten_characteristic.uuid = kRasRangingDataOverWrittenCharacteristic;
     ranging_data_overwritten_characteristic.type = BTGATT_DB_CHARACTERISTIC;
     ranging_data_overwritten_characteristic.properties =
-            GATT_CHAR_PROP_BIT_READ | GATT_CHAR_PROP_BIT_NOTIFY | GATT_CHAR_PROP_BIT_INDICATE;
+            GATT_CHAR_PROP_BIT_INDICATE;
     ranging_data_overwritten_characteristic.permissions = GATT_PERM_READ_ENCRYPTED | key_mask;
     service.push_back(ranging_data_overwritten_characteristic);
     service.push_back(ccc_descriptor);
@@ -730,6 +730,7 @@ public:
   void ResolveAddress(tBLE_BD_ADDR& ble_bd_addr, const RawAddress& address) {
     ble_bd_addr.bda = address;
     ble_bd_addr.type = BLE_ADDR_RANDOM;
+    btm_random_pseudo_to_identity_addr(&ble_bd_addr.bda, &ble_bd_addr.type);
     maybe_resolve_address(&ble_bd_addr.bda, &ble_bd_addr.type);
   }
 

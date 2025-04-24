@@ -859,13 +859,13 @@ bt_status_t btif_hh_connect(const tAclLinkSpec& link_spec) {
    giving up */
   btif_hh_cb.status = BTIF_HH_DEV_CONNECTING;
   btif_hh_cb.pending_link_spec = link_spec;
-  BTA_HhOpen(btif_hh_cb.pending_link_spec);
-
   do_in_jni_thread(base::Bind(
       [](tAclLinkSpec link_spec) {
         BTHH_STATE_UPDATE(link_spec, BTHH_CONN_STATE_CONNECTING);
       },
       link_spec));
+  BTA_HhOpen(btif_hh_cb.pending_link_spec);
+
   return BT_STATUS_SUCCESS;
 }
 

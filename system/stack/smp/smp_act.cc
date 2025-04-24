@@ -271,7 +271,7 @@ void smp_send_app_cback(tSMP_CB* p_cb, tSMP_INT_DATA* p_data) {
 void smp_send_pair_fail(tSMP_CB* p_cb, tSMP_INT_DATA* p_data) {
   p_cb->status = p_data->status;
   p_cb->failure = p_data->status;
-
+  log::error("smp_send_pair_fail smp_status:{}", smp_status_text(p_cb->status));
   if (p_cb->status <= SMP_MAX_FAIL_RSN_PER_SPEC &&
       p_cb->status != SMP_SUCCESS) {
     log::error("Pairing failed smp_status:{}", smp_status_text(p_cb->status));
@@ -1590,8 +1590,14 @@ void smp_br_send_pair_response(tSMP_CB* p_cb, tSMP_INT_DATA* /* p_data */) {
  *                  callback and remove the connection if needed.
  ******************************************************************************/
 void smp_pairing_cmpl(tSMP_CB* p_cb, tSMP_INT_DATA* /* p_data */) {
+  log::warn("smp_pairing_cmpl, tx unacked: {}", p_cb->total_tx_unacked);
   if (p_cb->total_tx_unacked == 0) {
     /* process the pairing complete */
+    smp_proc_pairing_cmpl(p_cb);
+  } else if ((p_cb->flags & SMP_PAIR_FLAGS_WE_STARTED_DD)
+          && (p_cb->role == HCI_ROLE_PERIPHERAL)
+          && (p_cb->state == SMP_STATE_IDLE)) {
+    log::warn("smp_pairing_cmpl tx unacked is not zero and role is peripheral, proc pairing comple");
     smp_proc_pairing_cmpl(p_cb);
   }
 }

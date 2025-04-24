@@ -103,10 +103,10 @@ void print_cs_procedure_settings() {
         log::info("max_proc_count: {}\n", cs_procedure_settings[i].max_proc_count);
 
         for (size_t i=0; i< CS_SUBEVENT_LEN_SIZE; i++) {
-            log::info("min_subevent_len[{}]: %x\n", i, cs_procedure_settings[i].min_subevent_len[i]);
+            log::info("min_subevent_len[{}]: {}\n", i, cs_procedure_settings[i].min_subevent_len[i]);
         }
         for (size_t i=0; i<CS_SUBEVENT_LEN_SIZE; i++) {
-            log::info("max_subevent_len[{}]: %x\n", i, cs_procedure_settings[i].max_subevent_len[i]);
+            log::info("max_subevent_len[{}]: {}\n", i, cs_procedure_settings[i].max_subevent_len[i]);
         }
         log::info("tone_ant_cfg_selection: {}\n", cs_procedure_settings[i].tone_ant_cfg_selection);
         log::info("phy: {}\n", cs_procedure_settings[i].phy);
@@ -121,15 +121,14 @@ void print_cs_procedure_settings() {
 void parsecsConfigSettings(xmlNode *input_node) {
    unsigned int TempFieldsCount = 0;
    std::stack<xmlNode*> profile_node_stack;
-   unsigned int TempConfigsCount = 0;
    xmlNode *FirstChild = xmlFirstElementChild(input_node);
    unsigned long CsConfigFields = xmlChildElementCount(FirstChild);
    tCS_CONFIG temp_cs_config;
    memset(&temp_cs_config, 0, sizeof(tCS_CONFIG));
 
    log::info("cs Fields count is {} \n", CsConfigFields);
-   for (xmlNode *node = input_node->children;
-                 node != NULL || !profile_node_stack.empty(); node = node->children) {
+   for (xmlNode *node = input_node->children; node != NULL ||
+        !profile_node_stack.empty(); node = node ? node->children : NULL) {
      if (node == NULL) {
        node = profile_node_stack.top();
        profile_node_stack.pop();
@@ -138,60 +137,63 @@ void parsecsConfigSettings(xmlNode *input_node) {
      if (node) {
        if (node->type == XML_ELEMENT_NODE) {
          if ((is_leaf(node))) {
-           std::string content = (const char*)(xmlNodeGetContent(node));
-           if (content[0] == '\0') {
-                  log::info("Done with elements");
-               return;
+           xmlChar* content = xmlNodeGetContent(node);
+           if (content == NULL || xmlStrlen(content) == 0) {
+               xmlFree(content); // Free the allocated memory
+               continue; // Skip this node and continue with the next one
            }
-           //log::info("name: %s\n", node->name);
-           log::info("content: {}\n", content.c_str());
-           if (!xmlStrcmp(node->name,(const xmlChar*)"ConfigId")) {
-             temp_cs_config.config_id = atoi(content.c_str());
+
+           std::string contentStr((const char *)content, xmlStrlen(content));
+           xmlFree(content); // Free the allocated memory
+
+           log::verbose("content: {}\n", contentStr.c_str());
+           if (!xmlStrcmp(node->name, (const xmlChar*)"ConfigId")) {
+             temp_cs_config.config_id = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"MainModeType")) {
-             temp_cs_config.main_mode_type = (float)atoi(content.c_str());
+             temp_cs_config.main_mode_type = (float)atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"SubModeType")) {
-             temp_cs_config.sub_mode_type = atoi(content.c_str());
+             temp_cs_config.sub_mode_type = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"MainModeMinSteps")) {
-             temp_cs_config.main_mode_min_steps = atoi(content.c_str());
+             temp_cs_config.main_mode_min_steps = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"MainModeMaxSteps")) {
-             temp_cs_config.main_mode_max_steps = atoi(content.c_str());
+             temp_cs_config.main_mode_max_steps = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"MainModeRepetition")) {
-             temp_cs_config.main_mode_rep = atoi(content.c_str());
+             temp_cs_config.main_mode_rep = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"Mode0Steps")) {
-             temp_cs_config.mode_0_steps = atoi(content.c_str());
+             temp_cs_config.mode_0_steps = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"Role")) {
-             temp_cs_config.role = atoi(content.c_str());
+             temp_cs_config.role = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"RTTTypes")) {
-             temp_cs_config.rtt_types = atoi(content.c_str());
+             temp_cs_config.rtt_types = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"CsSyncPhy")) {
-             temp_cs_config.cs_sync_phy = atoi(content.c_str());
+             temp_cs_config.cs_sync_phy = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"ChannelMap")) {
-             convertStringToChannelMap(content, temp_cs_config.channel_map);
+             convertStringToChannelMap(contentStr, temp_cs_config.channel_map);
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"ChannelMapRepetition")) {
-             temp_cs_config.channel_map_rep = atoi(content.c_str());
+             temp_cs_config.channel_map_rep = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"ChannelSelectionType")) {
-             temp_cs_config.hop_algo_type = atoi(content.c_str());
+             temp_cs_config.hop_algo_type = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"ChannelShape")) {
-             temp_cs_config.user_shape = atoi(content.c_str());
+             temp_cs_config.user_shape = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"ChannelJump")) {
-             temp_cs_config.user_channel_jump = atoi(content.c_str());
+             temp_cs_config.user_channel_jump = atoi(contentStr.c_str());
              TempFieldsCount++;
            } else if (!xmlStrcmp(node->name, (const xmlChar*)"CompanionSignalEnable")) {
-             temp_cs_config.comp_signal_enable = atoi(content.c_str());
+             temp_cs_config.comp_signal_enable = atoi(contentStr.c_str());
              TempFieldsCount++;
            }
          }
@@ -201,89 +203,6 @@ void parsecsConfigSettings(xmlNode *input_node) {
             cs_config_settings.push_back(temp_cs_config);
             memset(&temp_cs_config, 0, sizeof(tCS_CONFIG));
             TempFieldsCount = 0;
-            TempConfigsCount++;
-         }
-         }
-       }
-
-       if (node->next != NULL)
-       {
-         profile_node_stack.push(node->next);
-         node = node->next;
-       }
-   }
-
-   log::info("All CS Configs are parsed successfully\n");
-   print_cs_configs();
-}
-
-void parsecsProcedureSettings(xmlNode *input_node) {
-   std::stack<xmlNode*> profile_node_stack;
-   unsigned int TempCodecCount = 0;
-   unsigned int TempFieldsCount = 0;
-   xmlNode *FirstChild = xmlFirstElementChild(input_node);
-   unsigned long CsProcedureFields = xmlChildElementCount(FirstChild);
-   tCS_PROCEDURE_PARAM temp_cs_proc_param;
-   memset(&temp_cs_proc_param, 0, sizeof(tCS_PROCEDURE_PARAM));
-
-   log::info("cs procedure Fields count is %ld \n", CsProcedureFields);
-   for (xmlNode *node = input_node->children;
-                 node != NULL || !profile_node_stack.empty(); node = node->children) {
-     if (node == NULL) {
-       node = profile_node_stack.top();
-       profile_node_stack.pop();
-     }
-
-     if (node) {
-       if (node->type == XML_ELEMENT_NODE) {
-         if ((is_leaf(node))) {
-           std::string content = (const char*)(xmlNodeGetContent(node));
-           if (content[0] == '\0') {
-               return;
-           }
-	   log::info("Done with elements");
-           if (!xmlStrcmp(node->name,(const xmlChar*)"MaxProcedureDuration")) {
-             temp_cs_proc_param.max_proc_duration = atoi(content.c_str());
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MinPeriodBetweenProcedures")) {
-             temp_cs_proc_param.min_period_between_proc = (float)atoi(content.c_str());
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MaxPeriodBetweenProcedures")) {
-             temp_cs_proc_param.max_period_between_proc = atoi(content.c_str());
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MaxProcedureCount")) {
-             temp_cs_proc_param.max_proc_count = atoi(content.c_str());
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MinSubEventLen")) {
-             convertStringToSubEventLen(content, temp_cs_proc_param.min_subevent_len);
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MaxSubEventLen")) {
-             convertStringToSubEventLen(content, temp_cs_proc_param.max_subevent_len);
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"ToneAntennaConfigSelection")) {
-             temp_cs_proc_param.tone_ant_cfg_selection = atoi(content.c_str());
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"Phy")) {
-             temp_cs_proc_param.phy = atoi(content.c_str());
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"TxPowerDelta")) {
-             temp_cs_proc_param.tx_pwr_delta = atoi(content.c_str());
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"PreferredPeerAntenna")) {
-	     convertStringToPreferredAnt(content, &temp_cs_proc_param.preferred_peer_antenna);
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"SnrControlInitiator")) {
-             temp_cs_proc_param.snr_control_initiator = atoi(content.c_str());
-             TempFieldsCount++;
-           } else if (!xmlStrcmp(node->name, (const xmlChar*)"SnrControlReflector")) {
-             temp_cs_proc_param.snr_control_reflector = atoi(content.c_str());
-             TempFieldsCount++;
-           }
-	 }
-
-         if (TempFieldsCount == CsProcedureFields) {
-             cs_procedure_settings.push_back(temp_cs_proc_param);
-               TempFieldsCount = 0;
          }
        }
      }
@@ -292,7 +211,92 @@ void parsecsProcedureSettings(xmlNode *input_node) {
        profile_node_stack.push(node->next);
        node = node->next;
      }
-   } // end of if (node)
+   }
+
+   log::info("All CS Configs are parsed successfully\n");
+   print_cs_configs();
+}
+
+void parsecsProcedureSettings(xmlNode *input_node) {
+   std::stack<xmlNode*> profile_node_stack;
+   unsigned int TempFieldsCount = 0;
+   xmlNode *FirstChild = xmlFirstElementChild(input_node);
+   unsigned long CsProcedureFields = xmlChildElementCount(FirstChild);
+   tCS_PROCEDURE_PARAM temp_cs_proc_param;
+   memset(&temp_cs_proc_param, 0, sizeof(tCS_PROCEDURE_PARAM));
+
+   log::info("cs procedure Fields count is {} \n", CsProcedureFields);
+   for (xmlNode *node = input_node->children; node != NULL ||
+        !profile_node_stack.empty(); node = node ? node->children : NULL) {
+     if (node == NULL) {
+       node = profile_node_stack.top();
+       profile_node_stack.pop();
+     }
+
+     if (node) {
+       if (node->type == XML_ELEMENT_NODE) {
+         if ((is_leaf(node))) {
+           xmlChar* content = xmlNodeGetContent(node);
+           if (content == NULL || xmlStrlen(content) == 0) {
+               xmlFree(content); // Free the allocated memory
+               continue; // Skip this node and continue with the next one
+           }
+
+           std::string contentStr((const char *)content, xmlStrlen(content));
+           xmlFree(content); // Free the allocated memory
+
+           if (!xmlStrcmp(node->name, (const xmlChar*)"MaxProcedureDuration")) {
+             temp_cs_proc_param.max_proc_duration = atoi(contentStr.c_str());
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MinPeriodBetweenProcedures")) {
+             temp_cs_proc_param.min_period_between_proc = (float)atoi(contentStr.c_str());
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MaxPeriodBetweenProcedures")) {
+             temp_cs_proc_param.max_period_between_proc = atoi(contentStr.c_str());
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MaxProcedureCount")) {
+             temp_cs_proc_param.max_proc_count = atoi(contentStr.c_str());
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MinSubEventLen")) {
+             convertStringToSubEventLen(contentStr, temp_cs_proc_param.min_subevent_len);
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"MaxSubEventLen")) {
+             convertStringToSubEventLen(contentStr, temp_cs_proc_param.max_subevent_len);
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"ToneAntennaConfigSelection")) {
+             temp_cs_proc_param.tone_ant_cfg_selection = atoi(contentStr.c_str());
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"Phy")) {
+             temp_cs_proc_param.phy = atoi(contentStr.c_str());
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"TxPowerDelta")) {
+             temp_cs_proc_param.tx_pwr_delta = atoi(contentStr.c_str());
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"PreferredPeerAntenna")) {
+             convertStringToPreferredAnt(contentStr, &temp_cs_proc_param.preferred_peer_antenna);
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"SnrControlInitiator")) {
+             temp_cs_proc_param.snr_control_initiator = atoi(contentStr.c_str());
+             TempFieldsCount++;
+           } else if (!xmlStrcmp(node->name, (const xmlChar*)"SnrControlReflector")) {
+             temp_cs_proc_param.snr_control_reflector = atoi(contentStr.c_str());
+             TempFieldsCount++;
+           }
+         }
+
+         if (TempFieldsCount == CsProcedureFields) {
+             log::info("Done with {} many elements", CsProcedureFields);
+             cs_procedure_settings.push_back(temp_cs_proc_param);
+             TempFieldsCount = 0;
+         }
+       }
+     }
+
+     if (node->next != NULL) {
+       profile_node_stack.push(node->next);
+       node = node->next;
+     }
+   }
 
    log::info("All CS Procedure Settings are parsed successfully\n");
    print_cs_procedure_settings();
@@ -309,18 +313,24 @@ void ReadLocalConfigs(void)
       if (strncmp(value, "true", PROPERTY_VALUE_MAX) == 0)
        local_config = true;
   }
-  if (!local_config)
-  doc = xmlReadFile(CS_CONFIG_PATH, NULL, 0);
-  else
-    doc = xmlReadFile(CS_CONFIG_PATH_LOCAL, NULL, 0);
+  const char* config_path = local_config ? CS_CONFIG_PATH_LOCAL : CS_CONFIG_PATH;
+  doc = xmlReadFile(config_path, NULL, 0);
   if (doc == NULL) {
-    log::error("Could not parse the CS XML file {}", CS_CONFIG_PATH);
+    log::error("Could not parse the CS XML file {}", config_path);
     return;
   }
 
   root_element = xmlDocGetRootElement(doc);
+  if (root_element == NULL) {
+    log::error("Empty XML document: {}", config_path);
+    xmlFreeDoc(doc);
+    xmlCleanupParser();
+    return;
+  }
+
   std::stack<xmlNode*> S;
-  for (xmlNode *node = root_element; node != NULL || !S.empty(); node = node->children) {
+  for (xmlNode *node = root_element; node != NULL || !S.empty();
+    node = node ? node->children : NULL) {
     if (node == NULL) {
        node = S.top();
        S.pop();
@@ -329,22 +339,26 @@ void ReadLocalConfigs(void)
     if (node) {
       if (node->type == XML_ELEMENT_NODE) {
         if (!(is_leaf(node))) {
-          std::string content = (const char *) (xmlNodeGetContent (node));
-          if (content[0] == '\0') {
-              return;
+          xmlChar* content = xmlNodeGetContent(node);
+          if (content == NULL || xmlStrlen(content) == 0) {
+              xmlFree(content); // Free the allocated memory
+              continue; // Skip this node and continue with the next one
           }
 
-          if (!xmlStrcmp (node->name, (const xmlChar *) "CsConfigurationList")) {
+          std::string contentStr((const char *)content, xmlStrlen(content));
+          xmlFree(content); // Free the allocated memory
+
+          if (!xmlStrcmp(node->name, (const xmlChar *) "CsConfigurationList")) {
              log::info("CsConfigurationList configs being parsed\n");
           }
 
-          if (!xmlStrcmp (node->name, (const xmlChar *) "CsConfig")) {
-             log::info("CsConfig  being parsed\n");
+          if (!xmlStrcmp(node->name, (const xmlChar *) "CsConfig")) {
+             log::info("CsConfig being parsed\n");
              cs_config_settings_count = xmlChildElementCount(node);
              parsecsConfigSettings(node);
           }
 
-          if (!xmlStrcmp (node->name, (const xmlChar *) "CsProcedure")) {
+          if (!xmlStrcmp(node->name, (const xmlChar *) "CsProcedure")) {
              log::info("CsProcedure configs being parsed\n");
              cs_procedure_settings_count = xmlChildElementCount(node);
              parsecsProcedureSettings(node);
@@ -353,7 +367,7 @@ void ReadLocalConfigs(void)
       }
 
       if (node->next != NULL) {
-        S.push(node -> next);
+        S.push(node->next);
       }
     }
   }

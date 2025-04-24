@@ -81,7 +81,6 @@ class LeAudioClient {
   virtual bool isOutputPreferenceLeAudio(const RawAddress& address) = 0;
   virtual bool isDuplexPreferenceLeAudio(const RawAddress& address) = 0;
   virtual std::vector<RawAddress> GetGroupDevices(const int group_id) = 0;
-  virtual void UpdateCallAudioRoute(int callAudioRoute) = 0;
 
   static bool RegisterIsoDataConsumer(LeAudioIsoDataCallback callback);
 

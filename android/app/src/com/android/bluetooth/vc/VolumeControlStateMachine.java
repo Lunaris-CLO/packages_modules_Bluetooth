@@ -54,6 +54,7 @@ public class VolumeControlStateMachine extends StateMachine {
     private Disconnecting mDisconnecting;
     private Connected mConnected;
     private int mLastConnectionState = -1;
+    private int mCurrentConnectionState = BluetoothProfile.STATE_DISCONNECTED;
 
     private VolumeControlService mService;
     private VolumeControlNativeInterface mNativeInterface;
@@ -116,6 +117,7 @@ public class VolumeControlStateMachine extends StateMachine {
                             + "): "
                             + messageWhatToString(getCurrentMessage().what));
 
+            mCurrentConnectionState = BluetoothProfile.STATE_DISCONNECTED;
             removeDeferredMessages(DISCONNECT);
 
             if (mLastConnectionState != -1) {
@@ -235,6 +237,8 @@ public class VolumeControlStateMachine extends StateMachine {
                             + mDevice
                             + "): "
                             + messageWhatToString(getCurrentMessage().what));
+
+            mCurrentConnectionState = BluetoothProfile.STATE_CONNECTING;
             sendMessageDelayed(CONNECT_TIMEOUT, sConnectTimeoutMs);
             broadcastConnectionState(BluetoothProfile.STATE_CONNECTING, mLastConnectionState);
         }
@@ -323,20 +327,7 @@ public class VolumeControlStateMachine extends StateMachine {
     }
 
     int getConnectionState() {
-        String currentState = getCurrentState().getName();
-        switch (currentState) {
-            case "Disconnected":
-                return BluetoothProfile.STATE_DISCONNECTED;
-            case "Connecting":
-                return BluetoothProfile.STATE_CONNECTING;
-            case "Connected":
-                return BluetoothProfile.STATE_CONNECTED;
-            case "Disconnecting":
-                return BluetoothProfile.STATE_DISCONNECTING;
-            default:
-                Log.e(TAG, "Bad currentState: " + currentState);
-                return BluetoothProfile.STATE_DISCONNECTED;
-        }
+        return mCurrentConnectionState;
     }
 
     @VisibleForTesting
@@ -349,6 +340,8 @@ public class VolumeControlStateMachine extends StateMachine {
                             + mDevice
                             + "): "
                             + messageWhatToString(getCurrentMessage().what));
+
+            mCurrentConnectionState = BluetoothProfile.STATE_DISCONNECTING;
             sendMessageDelayed(CONNECT_TIMEOUT, sConnectTimeoutMs);
             broadcastConnectionState(BluetoothProfile.STATE_DISCONNECTING, mLastConnectionState);
         }
@@ -462,6 +455,8 @@ public class VolumeControlStateMachine extends StateMachine {
                             + mDevice
                             + "): "
                             + messageWhatToString(getCurrentMessage().what));
+
+            mCurrentConnectionState = BluetoothProfile.STATE_CONNECTED;
             removeDeferredMessages(CONNECT);
             broadcastConnectionState(BluetoothProfile.STATE_CONNECTED, mLastConnectionState);
         }
@@ -538,7 +533,7 @@ public class VolumeControlStateMachine extends StateMachine {
     }
 
     synchronized boolean isConnected() {
-        return getCurrentState() == mConnected;
+        return (getConnectionState() == BluetoothProfile.STATE_CONNECTED);
     }
 
     // This method does not check for error condition (newState == prevState)

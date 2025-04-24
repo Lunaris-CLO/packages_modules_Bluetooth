@@ -161,7 +161,6 @@ typedef struct {
 
   bool peer_rx_disabled; /* If true peer sent FCOFF */
   uint8_t last_mux;      /* Last mux allocated */
-  uint8_t last_port_index;  // Index of last port allocated in rfc_cb.port
 } tRFCOMM_CB;
 
 /* Main Control Block for the RFCOMM Layer (PORT and RFC) */

@@ -66,29 +66,24 @@ static const tPORT_STATE default_port_pars = {
  *
  ******************************************************************************/
 tPORT* port_allocate_port(uint8_t dlci, const RawAddress& bd_addr) {
-  uint8_t port_index = rfc_cb.rfc.last_port_index + static_cast<uint8_t>(1);
   // Loop at most MAX_RFC_PORTS items
   for (int loop_counter = 0; loop_counter < MAX_RFC_PORTS;
-       loop_counter++, port_index++) {
-    if (port_index >= MAX_RFC_PORTS) {
-      port_index = 0;
-    }
-    tPORT* p_port = &rfc_cb.port.port[port_index];
+       loop_counter++) {
+    tPORT* p_port = &rfc_cb.port.port[loop_counter];
     if (!p_port->in_use) {
       // Assume that we already called port_release_port on this
       memset(p_port, 0, sizeof(tPORT));
       p_port->in_use = true;
       // handle is a port handle starting from 1
-      p_port->handle = port_index + static_cast<uint8_t>(1);
+      p_port->handle = loop_counter + static_cast<uint8_t>(1);
       // During the open set default state for the port connection
       port_set_defaults(p_port);
       p_port->rfc.port_timer = alarm_new("rfcomm_port.port_timer");
       p_port->dlci = dlci;
       p_port->bd_addr = bd_addr;
-      rfc_cb.rfc.last_port_index = port_index;
       log::verbose(
-          "rfc_cb.port.port[{}]:{} chosen, last_port_index:{}, bd_addr={}",
-          port_index, fmt::ptr(p_port), rfc_cb.rfc.last_port_index, bd_addr);
+          "rfc_cb.port.port[{}]:{} chosen, port_index:{}, bd_addr={}",
+          loop_counter, fmt::ptr(p_port), p_port->handle, bd_addr);
       return p_port;
     }
   }

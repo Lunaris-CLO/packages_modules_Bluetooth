@@ -219,7 +219,6 @@ public class LeAudioService extends ProfileService {
     boolean mUnicastVolumeRetainedForBroadcastTransition = false;
     private byte[] mCachedArgs = null;
     private int mCachedOpcode = -1;
-    private int mCallAudioRoute = -1;
 
     @VisibleForTesting TbsService mTbsService;
 
@@ -546,7 +545,6 @@ public class LeAudioService extends ProfileService {
         }
 
         mInCall = false;
-        mCallAudioRoute = -1;
         mQueuedInCallValue = Optional.empty();
         if (leaudioUseAudioModeListener() && mAudioModeChangeListener != null) {
           Log.i(TAG, "leaudioUseAudioModeListener is true, calling removeOnModeChangedListener");
@@ -5398,17 +5396,6 @@ public class LeAudioService extends ProfileService {
             return null;
         }
         return getConnectedGroupLeadDevice(groupId);
-    }
-
-    public void updateCallAudioRoute(int callAudioRoute) {
-        Log.d(TAG, "updateCallAudioRoute(" + callAudioRoute + ")");
-
-        if (!mLeAudioNativeIsInitialized) {
-            Log.e(TAG, "Le Audio not initialized properly.");
-            return;
-        }
-        mCallAudioRoute = callAudioRoute;
-        mNativeInterface.updateCallAudioRoute(callAudioRoute);
     }
 
     /**

@@ -1383,7 +1383,7 @@ public class BassClientService extends ProfileService {
             if (sm == null) {
                 return;
             }
-            if (sm.getConnectionState() != BluetoothProfile.STATE_DISCONNECTED) {
+            if (sm.getConnectionState(false) != BluetoothProfile.STATE_DISCONNECTED) {
                 Log.i(TAG, "Disconnecting device because it was unbonded.");
                 disconnect(device);
                 return;
@@ -1488,7 +1488,7 @@ public class BassClientService extends ProfileService {
                 log("getConnectionState returns STATE_DISC");
                 return BluetoothProfile.STATE_DISCONNECTED;
             }
-            return sm.getConnectionState();
+            return sm.getConnectionState(false);
         }
     }
 
@@ -1516,7 +1516,7 @@ public class BassClientService extends ProfileService {
                 int connectionState = BluetoothProfile.STATE_DISCONNECTED;
                 BassClientStateMachine sm = getOrCreateStateMachine(device);
                 if (sm != null) {
-                    connectionState = sm.getConnectionState();
+                    connectionState = sm.getConnectionState(false);
                 }
                 for (int state : states) {
                     if (connectionState == state) {
@@ -3674,7 +3674,7 @@ public class BassClientService extends ProfileService {
         /* Dump first connected state machines */
         for (Map.Entry<BluetoothDevice, BassClientStateMachine> entry : mStateMachines.entrySet()) {
             BassClientStateMachine sm = entry.getValue();
-            if (sm.getConnectionState() == BluetoothProfile.STATE_CONNECTED) {
+            if (sm.getConnectionState(false) == BluetoothProfile.STATE_CONNECTED) {
                 sm.dump(sb);
                 sb.append("\n\n");
             }
@@ -3683,7 +3683,7 @@ public class BassClientService extends ProfileService {
         /* Dump at least all other than connected state machines */
         for (Map.Entry<BluetoothDevice, BassClientStateMachine> entry : mStateMachines.entrySet()) {
             BassClientStateMachine sm = entry.getValue();
-            if (sm.getConnectionState() != BluetoothProfile.STATE_CONNECTED) {
+            if (sm.getConnectionState(false) != BluetoothProfile.STATE_CONNECTED) {
                 sm.dump(sb);
             }
         }

@@ -682,6 +682,7 @@ public:
   void ResolveAddress(tBLE_BD_ADDR& ble_bd_addr, const RawAddress& address) {
     ble_bd_addr.bda = address;
     ble_bd_addr.type = BLE_ADDR_RANDOM;
+    btm_random_pseudo_to_identity_addr(&ble_bd_addr.bda, &ble_bd_addr.type);
     maybe_resolve_address(&ble_bd_addr.bda, &ble_bd_addr.type);
   }
 
