@@ -235,13 +235,25 @@ void avdt_ccb_hdl_discover_cmd(AvdtpCcb* p_ccb, tAVDT_CCB_EVT* p_data) {
         }
         if(scb_vbr_cap) {
           log::verbose("DUT has VBR support");
-          if (!vbr_bl) {
-            log::verbose("AAC VBR is enabled, show AAC SEP for this peer device");
-          } else if (avdt_ccb_check_peer_eligible_for_aac_codec(p_ccb)) {
+          if(strcmp(vbr_value,"false") == 0) {
+            log::verbose("Remote device does not have VBR support");
+            if (avdt_ccb_check_peer_eligible_for_aac_codec(p_ccb)) {
               log::verbose("Show AAC SEP for this peer device");
-          } else {
-              log::verbose("Do not show AAC SEP for this peer device");
-              continue;
+            } else {
+                log::verbose("Do not show AAC SEP for this peer device");
+                continue;
+            }
+          }
+          else {
+            log::verbose("Remote device has VBR support");
+            if (!vbr_bl) {
+              log::verbose("AAC VBR is enabled, show AAC SEP for this peer device");
+            } else if (avdt_ccb_check_peer_eligible_for_aac_codec(p_ccb)) {
+                log::verbose("Show AAC SEP for this peer device");
+            } else {
+                log::verbose("Do not show AAC SEP for this peer device");
+                continue;
+            }
           }
         } else {
             log::verbose("DUT does not have VBR support");

@@ -30,7 +30,9 @@
 
 #include "internal_include/bt_target.h"
 #include "os/logging/log_adapter.h"
+#include <unistd.h>
 #include "osi/include/allocator.h"
+#include "internal_include/stack_config.h"
 #include "stack/include/bt_hdr.h"
 #include "stack/include/l2c_api.h"
 #include "stack/include/rfcdefs.h"
@@ -344,6 +346,11 @@ void rfc_send_msc(tRFC_MCB* p_mcb, uint8_t dlci, bool is_command,
   p_buf->len = len + 2;
 
   rfc_send_buf_uih(p_mcb, RFCOMM_MX_DLCI, p_buf);
+  if(stack_config_get_interface()->get_pts_rfcomm_rls_check() && is_command == false) {
+    sleep(1);
+    RFCOMM_LineStatusReq(p_mcb, dlci, 0x08);
+
+  }
 }
 
 /*******************************************************************************

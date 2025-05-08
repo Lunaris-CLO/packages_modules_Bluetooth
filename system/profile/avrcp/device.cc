@@ -1069,6 +1069,9 @@ void Device::GetElementAttributesResponse(
   auto get_element_attributes_pkt = pkt;
   auto attributes_requested =
       get_element_attributes_pkt->GetAttributesRequested();
+  bool all_attributes_flag =
+      osi_property_get_bool("persist.vendor.bt.a2dp.all_attributes_flag", false);
+  log::info(" all_attributes_flag: {}", all_attributes_flag);
 
   //To Pass PTS TC AVCTP/TG/FRA/BV-02-C
   /* After AVCTP connection is established with remote,
@@ -1103,41 +1106,50 @@ void Device::GetElementAttributesResponse(
     for (const auto& attribute : attributes_requested) {
       log::verbose("requested attribute: {}", AttributeText(attribute));
       if (info.attributes.find(attribute) != info.attributes.end()) {
-        if (info.attributes.find(attribute)->value().empty()) {
-          log::verbose("empty attribute found");
-          response->AddAttributeEntry(attribute, std::string());
+        if (info.attributes.find(attribute)->value().empty() && all_attributes_flag) {
+          log::verbose("Empty attribute found, add string Unavailable");
+          response->AddAttributeEntry(attribute, "Unavailable");
         } else {
+          log::verbose("Add attribute value");
           response->AddAttributeEntry(*info.attributes.find(attribute));
         }
-      } else {
+      } else if (all_attributes_flag) {
         //we send a response even for attributes that we don't have a value for.
-        log::verbose("attribute not found");
-        response->AddAttributeEntry(attribute, std::string());
+        log::info(" Attribute not found, add string Unavailable");
+        response->AddAttributeEntry(attribute, "Unavailable");
       }
     }
   } else {  // zero attributes requested which means all attributes requested
-    std::vector<Attribute> all_attributes = {Attribute::TITLE,
-                                             Attribute::ARTIST_NAME,
-                                             Attribute::ALBUM_NAME,
-                                             Attribute::TRACK_NUMBER,
-                                             Attribute::TOTAL_NUMBER_OF_TRACKS,
-                                             Attribute::GENRE,
-                                             Attribute::PLAYING_TIME,
-                                             Attribute::DEFAULT_COVER_ART};
-    for (const auto& attribute : all_attributes) {
-      if (info.attributes.find(attribute) != info.attributes.end()) {
-        log::verbose("requested attribute: {}", AttributeText(attribute));
-        if (info.attributes.find(attribute)->value().empty()) {
-          log::verbose("empty attribute found");
-          response->AddAttributeEntry(attribute, std::string());
+    if (!all_attributes_flag) {
+      for (const auto& attribute : info.attributes) {
+        log::info(" Add attribute value");
+        response->AddAttributeEntry(attribute);
+      }
+    } else {
+      std::vector<Attribute> all_attributes = {Attribute::TITLE,
+                                               Attribute::ARTIST_NAME,
+                                               Attribute::ALBUM_NAME,
+                                               Attribute::TRACK_NUMBER,
+                                               Attribute::TOTAL_NUMBER_OF_TRACKS,
+                                               Attribute::GENRE,
+                                               Attribute::PLAYING_TIME,
+                                               Attribute::DEFAULT_COVER_ART};
+      for (const auto& attribute : all_attributes) {
+        if (info.attributes.find(attribute) != info.attributes.end()) {
+          log::verbose("requested attribute: {}", AttributeText(attribute));
+          if (info.attributes.find(attribute)->value().empty() && all_attributes_flag) {
+            log::verbose("Empty attribute found, add string Unavailable");
+            response->AddAttributeEntry(attribute, "Unavailable");
+          } else {
+            log::info(" Add attribute value");
+            response->AddAttributeEntry(*info.attributes.find(attribute));
+          }
         } else {
-          response->AddAttributeEntry(*info.attributes.find(attribute));
+          // If all attributes were requested, we send a response even for attributes that we don't
+          // have a value for.
+          log::info(" Attribute not found, add string Unavailable");
+          response->AddAttributeEntry(attribute, "Unavailable");
         }
-      } else {
-        // If all attributes were requested, we send a response even for attributes that we don't
-        // have a value for.
-        log::verbose("attribute not found");
-        response->AddAttributeEntry(attribute, std::string());
       }
     }
   }

@@ -1347,7 +1347,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       reference_power_level = cs_event_result.GetReferencePowerLevel();
       log::verbose("reference power level: {}", reference_power_level);
 
-      log::verbose(
+      log::info(
           "LE_CS_SUBEVENT_RESULT: start_acl_conn_event {} procedure_counter {} acl_handle {}",
           cs_event_result.GetStartAclConnEvent(),
           cs_event_result.GetProcedureCounter(),
@@ -1382,7 +1382,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 
     if (procedure_done_status == CsProcedureDoneStatus::ABORTED ||
         subevent_done_status == CsSubeventDoneStatus::ABORTED) {
-      log::warn(
+      log::info(
               "Received CS Subevent with procedure_abort_reason:{}, subevent_abort_reason:{}, "
               "connection_handle:{}, counter:{}",
               ProcedureAbortReasonText(procedure_abort_reason),
@@ -2054,7 +2054,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 	    gettimeofday(&tv, NULL);
 	    curr_proc_complete_timestampMs  = tv.tv_sec*1e6*1ll + tv.tv_usec*1ll;
         raw_data.timestampMs_ = (long)(curr_proc_complete_timestampMs - proc_start_timestampMs);
-        log::verbose(
+        log::info(
             "timestampMs_: {} current_proc : {} proc start :{}",
             raw_data.timestampMs_,
             curr_proc_complete_timestampMs,

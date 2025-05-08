@@ -2099,9 +2099,16 @@ void smp_link_encrypted(const RawAddress& bda, uint8_t encr_enable) {
   }
 }
 
-void smp_cancel_start_encryption_attempt() {
+void smp_cancel_start_encryption_attempt(const RawAddress& bda) {
   log::error("Encryption request cancelled");
   smp_sm_event(&smp_cb, SMP_DISCARD_SEC_REQ_EVT, NULL);
+
+  log::warn("smp_cb.state: {}   BD Addr: {} vs Pairing Bd address {}",
+            smp_cb.state, bda, smp_cb.pairing_bda);
+  if ((bda != RawAddress::kEmpty) && (smp_cb.pairing_bda == bda) &&
+      (smp_cb.state == SMP_STATE_IDLE)) {
+    smp_cb.pairing_bda = RawAddress::kEmpty;
+  }
 }
 
 /*******************************************************************************

@@ -568,6 +568,10 @@ public:
       return;
     }
 
+    if(ccc_value == 0x0001) {
+      BTA_GATTS_SendRsp(conn_id, p_data->req_data.trans_id, WRITE_REJECTED, &p_msg);
+      return;
+    }
     trackers_[remote_bda].ccc_values_[characteristic->uuid_] = ccc_value;
     log::info("Write CCC for {}, conn_id:{}, value:0x{:04x}", getUuidName(characteristic->uuid_),
               conn_id, ccc_value);

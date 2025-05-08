@@ -1250,7 +1250,11 @@ class LeAudioClientImpl : public LeAudioClient {
 
   void SetInCall(bool in_call) override {
     log::debug("in_call: {}", in_call);
-    log::debug("in_call: {}", in_call);
+    if (!in_call) {
+      track_in_call_update_ = 0;
+      defer_reconfig_complete_update_ = false;
+    }
+
     if (in_call == in_call_) {
       log::verbose("no state change {}", in_call);
       return;
@@ -1294,7 +1298,15 @@ class LeAudioClientImpl : public LeAudioClient {
     } else {
       if (configuration_context_type_ == LeAudioContextType::CONVERSATIONAL) {
         log::info("Call is ended, speed up reconfiguration for media");
-        local_metadata_context_types_ = in_call_metadata_context_types_;
+        log::debug("in_call_metadata_context_types_ sink: {}  source: {}",
+                   in_call_metadata_context_types_.sink.to_string(),
+                   in_call_metadata_context_types_.source.to_string());
+
+        if (in_call_metadata_context_types_.source.any() ||
+            in_call_metadata_context_types_.sink.any()) {
+          log::info("Restore only when in_call_metadata_context_types_ exist.");
+          local_metadata_context_types_ = in_call_metadata_context_types_;
+        }
         log::debug("restored local_metadata_context_types_ sink: {}  source: {}",
                    local_metadata_context_types_.sink.to_string(),
                    local_metadata_context_types_.source.to_string());
@@ -1317,8 +1329,6 @@ class LeAudioClientImpl : public LeAudioClient {
           ReconfigureOrUpdateRemote(group, bluetooth::le_audio::types::kLeAudioDirectionSource);
         }
       } else {
-        track_in_call_update_ = 0;
-        defer_reconfig_complete_update_ = false;
         ReconfigureOrUpdateRemote(group, bluetooth::le_audio::types::kLeAudioDirectionSink);
       }
     }

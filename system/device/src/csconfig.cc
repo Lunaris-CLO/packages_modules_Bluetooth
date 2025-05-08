@@ -102,11 +102,11 @@ void print_cs_procedure_settings() {
         log::info("max_period_between_proc: {}\n", cs_procedure_settings[i].max_period_between_proc);
         log::info("max_proc_count: {}\n", cs_procedure_settings[i].max_proc_count);
 
-        for (size_t i=0; i< CS_SUBEVENT_LEN_SIZE; i++) {
-            log::info("min_subevent_len[{}]: {}\n", i, cs_procedure_settings[i].min_subevent_len[i]);
+        for (size_t j=0; j< CS_SUBEVENT_LEN_SIZE; j++) {
+            log::info("min_subevent_len[{}]: {}\n", j, cs_procedure_settings[i].min_subevent_len[j]);
         }
-        for (size_t i=0; i<CS_SUBEVENT_LEN_SIZE; i++) {
-            log::info("max_subevent_len[{}]: {}\n", i, cs_procedure_settings[i].max_subevent_len[i]);
+        for (size_t j=0; j<CS_SUBEVENT_LEN_SIZE; j++) {
+            log::info("max_subevent_len[{}]: {}\n", j, cs_procedure_settings[i].max_subevent_len[j]);
         }
         log::info("tone_ant_cfg_selection: {}\n", cs_procedure_settings[i].tone_ant_cfg_selection);
         log::info("phy: {}\n", cs_procedure_settings[i].phy);
@@ -390,8 +390,8 @@ void print_cs_configs() {
 
         log::info("RTTTypes: {}\n", cs_config_settings[i].rtt_types);
         log::info("CsSyncPhy: {}\n", cs_config_settings[i].cs_sync_phy);
-        for (size_t i=0; i<CS_CHANNEL_MAP_SIZE; i++) {
-            log::info("channelMap{}: {}\n", i, cs_config_settings[i].channel_map[i]);
+        for (size_t j=0; j<CS_CHANNEL_MAP_SIZE; j++) {
+            log::info("channelMap{}: {}\n", j, cs_config_settings[i].channel_map[j]);
         }
         log::info("ChannelMapRepetition: {}\n", cs_config_settings[i].channel_map_rep);
         log::info("ChannelSelectionType: {}\n", cs_config_settings[i].hop_algo_type);

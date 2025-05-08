@@ -901,8 +901,10 @@ void btm_process_remote_ext_features(tACL_CONN* p_acl_cb,
     return;
   }
 
-  if (p_dev_rec->sec_rec.sec_flags & BTM_SEC_NAME_KNOWN) {
-    /* Name is know, unset it so that name is retrieved again
+  if ((p_dev_rec->sec_rec.sec_flags & BTM_SEC_NAME_KNOWN) &&
+      ((p_dev_rec->dev_class[1] == BTM_COD_MAJOR_UNCLASSIFIED) ||
+      ((p_dev_rec->dev_class[1] & BTM_COD_MAJOR_CLASS_MASK) != BTM_COD_MAJOR_PERIPHERAL))) {
+    /* Name is known, unset it so that name is retrieved again
     * from security procedure. This will ensure, that if remote device
     * has updated its name since last connection, we will have
     * update name of remote device. */

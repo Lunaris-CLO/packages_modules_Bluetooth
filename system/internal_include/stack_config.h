@@ -43,6 +43,7 @@ typedef struct {
   int (*get_pts_l2cap_ecoc_min_key_size)(void);
   int (*get_pts_l2cap_ecoc_initial_chan_cnt)(void);
   bool (*get_pts_l2cap_ecoc_connect_remaining)(void);
+  bool (*get_pts_rfcomm_rls_check)(void);
   int (*get_pts_l2cap_ecoc_send_num_of_sdu)(void);
   bool (*get_pts_l2cap_ecoc_reconfigure)(void);
   const std::string* (*get_pts_broadcast_audio_config_options)(void);

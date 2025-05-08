@@ -1471,7 +1471,7 @@ public class BluetoothMapService extends ProfileService {
     @Override
     public void dump(StringBuilder sb) {
         super.dump(sb);
-        println(sb, "mRemoteDevice: " + sRemoteDevice);
+        println(sb, "sRemoteDevice: " + sRemoteDevice);
         println(sb, "sRemoteDeviceName: " + sRemoteDeviceName);
         println(sb, "mState: " + mState);
         println(sb, "mAppObserver: " + mAppObserver);

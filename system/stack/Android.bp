@@ -828,6 +828,7 @@ cc_test {
         ":TestMockMainShimEntry",
         ":TestMockStackBtm",
         ":TestMockStackMetrics",
+        ":TestCommonStackConfig",
         "rfcomm/port_api.cc",
         "rfcomm/port_rfc.cc",
         "rfcomm/port_utils.cc",
