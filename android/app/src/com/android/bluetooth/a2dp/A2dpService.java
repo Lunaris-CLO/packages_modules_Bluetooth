@@ -1508,13 +1508,16 @@ public class A2dpService extends ProfileService {
         Log.i(TAG, " getFallbackDevice");
         DatabaseManager dbManager = mAdapterService.getDatabase();
         if (dbManager != null) {
+            List<BluetoothDevice> A2dpConnectedDevice =
+                    getConnectedDevices();
+            if (A2dpConnectedDevice.contains(getActiveDevice())) {
+                A2dpConnectedDevice.remove(getActiveDevice());
+            }
+
             BluetoothDevice mostRecentDevice =
                 dbManager
-                    .getMostRecentlyConnectedDevicesInList(getConnectedDevices());
-            Log.i(TAG, " getFallbackDevice, activeDevice: " + getActiveDevice());
-            if (mostRecentDevice != null) {
-                return mostRecentDevice.equals(getActiveDevice()) ? null : mostRecentDevice;
-            }
+                    .getMostRecentlyConnectedDevicesInList(A2dpConnectedDevice);
+            return mostRecentDevice;
         }
         return null;
     }

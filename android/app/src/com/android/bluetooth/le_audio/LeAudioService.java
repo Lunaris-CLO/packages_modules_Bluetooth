@@ -217,6 +217,7 @@ public class LeAudioService extends ProfileService {
     boolean mIsSourceStreamMonitorModeEnabled = false;
     boolean mLeAudioSuspended = false;
     boolean mUnicastVolumeRetainedForBroadcastTransition = false;
+    boolean mHasFallback = true;
     private byte[] mCachedArgs = null;
     private int mCachedOpcode = -1;
 
@@ -256,7 +257,6 @@ public class LeAudioService extends ProfileService {
             mActiveState = ACTIVE_STATE_INACTIVE;
             mAllowedSinkContexts = BluetoothLeAudio.CONTEXTS_ALL;
             mAllowedSourceContexts = BluetoothLeAudio.CONTEXTS_ALL;
-            mHasFallbackDeviceWhenGettingInactive = false;
             mDirection = AUDIO_DIRECTION_NONE;
             mCodecStatus = null;
             mLostLeadDeviceWhileStreaming = null;
@@ -269,7 +269,6 @@ public class LeAudioService extends ProfileService {
         }
 
         Boolean mIsConnected;
-        Boolean mHasFallbackDeviceWhenGettingInactive;
         Integer mDirection;
         BluetoothLeAudioCodecStatus mCodecStatus;
         /* This can be non empty only for the streaming time */
@@ -562,6 +561,7 @@ public class LeAudioService extends ProfileService {
         if (!Flags.leaudioSynchronizeStart()) {
             mHandler.removeCallbacks(this::init);
         }
+        setDisconnected(true);
         removeActiveDevice(false);
 
         if (mTmapGattServer == null) {
@@ -839,7 +839,7 @@ public class LeAudioService extends ProfileService {
             Log.e(TAG, "Ignored disconnect request for " + device + " : no state machine");
             return false;
         }
-
+        setDisconnected(true);
         sm.sendMessage(LeAudioStateMachine.DISCONNECT);
 
         return true;
@@ -2467,12 +2467,6 @@ public class LeAudioService extends ProfileService {
             return true;
         }
 
-        if (currentlyActiveGroupId != LE_AUDIO_GROUP_ID_INVALID
-                && (groupId != LE_AUDIO_GROUP_ID_INVALID || hasFallbackDevice)) {
-            Log.i(TAG, "Remember that device has FallbackDevice when become inactive active");
-            groupDescriptor.mHasFallbackDeviceWhenGettingInactive = true;
-        }
-
         if (!mLeAudioNativeIsInitialized) {
             Log.e(TAG, "Le Audio not initialized properly.");
             return false;
@@ -2813,6 +2807,13 @@ public class LeAudioService extends ProfileService {
                 && isBroadcastAllowedToBeActivateInCurrentAudioMode();
     }
 
+    private void setDisconnected(boolean isDisconnected) {
+        Log.d(TAG, "setDisconnected: " + isDisconnected);
+        if(isDisconnected) {
+            mHasFallback = false;
+        }
+    }
+
     private void handleGroupTransitToInactive(int groupId) {
         mGroupReadLock.lock();
         try {
@@ -2855,16 +2856,17 @@ public class LeAudioService extends ProfileService {
                 */
             }
 
+            Log.d(TAG, "mHasFallback: " + mHasFallback);
             updateActiveDevices(
                     groupId,
                     descriptor.mDirection,
                     newDirections,
                     false,
-                    descriptor.mHasFallbackDeviceWhenGettingInactive,
+                    mHasFallback,
                     leaveConnectedInputDevice);
             /* Clear lost devices */
             Log.d(TAG, "Clear for group: " + groupId);
-            descriptor.mHasFallbackDeviceWhenGettingInactive = false;
+            mHasFallback = true;
             clearLostDevicesWhileStreaming(descriptor);
             mHandler.post(
                     () ->
@@ -4130,6 +4132,7 @@ public class LeAudioService extends ProfileService {
                     }
 
                     /* Notify Native layer */
+                    setDisconnected(true);
                     removeActiveDevice(hasFallbackDevice);
                     descriptor.setActiveState(ACTIVE_STATE_INACTIVE);
                     /* Update audio framework */
