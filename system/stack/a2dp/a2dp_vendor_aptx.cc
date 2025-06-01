@@ -284,6 +284,10 @@ bool A2DP_VendorCodecEqualsAptx(const uint8_t* p_codec_info_a,
 
 int A2DP_VendorGetBitRateAptx(const uint8_t* p_codec_info) {
   A2dpCodecConfig* CodecConfig = bta_av_get_a2dp_current_codec();
+  if (!CodecConfig) {
+    log::error("current codec config is null");
+    return -1;
+  }
   tA2DP_BITS_PER_SAMPLE bits_per_sample = CodecConfig->getAudioBitsPerSample();
   uint16_t samplerate = A2DP_GetTrackSampleRate(p_codec_info);
   return (samplerate * bits_per_sample * 2) / 4;

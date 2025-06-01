@@ -6371,11 +6371,18 @@ TEST_F(UnicastTest, SpeakerStreamingAutonomousRelease) {
 
   Mock::VerifyAndClearExpectations(&mock_audio_hal_client_callbacks_);
   Mock::VerifyAndClearExpectations(mock_le_audio_source_hal_client_);
+  Mock::VerifyAndClearExpectations(mock_le_audio_sink_hal_client_);
   SyncOnMainLoop();
 
   // Verify Data transfer on one audio source cis
   TestAudioDataTransfer(group_id, 1 /* cis_count_out */, 0 /* cis_count_in */,
                         1920);
+
+  EXPECT_CALL(mock_audio_hal_client_callbacks_, OnGroupStatus(group_id, GroupStatus::INACTIVE))
+          .Times(1);
+  EXPECT_CALL(mock_audio_hal_client_callbacks_,
+              OnGroupStreamStatus(group_id, GroupStreamStatus::IDLE))
+          .Times(1);
 
   // Inject the IDLE state as if an autonomous release happened
   ASSERT_NE(0lu, streaming_groups.count(group_id));
@@ -6390,10 +6397,14 @@ TEST_F(UnicastTest, SpeakerStreamingAutonomousRelease) {
       InjectCisDisconnected(group_id, ase.cis_conn_hdl);
     }
   }
-
   // Verify no Data transfer after the autonomous release
-  TestAudioDataTransfer(group_id, 0 /* cis_count_out */, 0 /* cis_count_in */,
-                        1920);
+  TestAudioDataTransfer(group_id, 0 /* cis_count_out */, 0 /* cis_count_in */, 1920);
+
+  // Inject Releasing
+  state_machine_callbacks_->StatusReportCb(group->group_id_,
+                                           GroupStreamStatus::RELEASING_AUTONOMOUS);
+  SyncOnMainLoop();
+  Mock::VerifyAndClearExpectations(&mock_audio_hal_client_callbacks_);
 }
 
 TEST_F(UnicastTest, TwoEarbudsStreaming) {
@@ -9837,8 +9848,17 @@ TEST_F_WITH_FLAGS(UnicastTest, GroupStreamStatus,
   EXPECT_CALL(mock_audio_hal_client_callbacks_,
               OnGroupStreamStatus(group_id, GroupStreamStatus::IDLE))
       .Times(1);
-  state_machine_callbacks_->StatusReportCb(group_id,
-                                           GroupStreamStatus::SUSPENDING);
+  state_machine_callbacks_->StatusReportCb(group_id, GroupStreamStatus::RELEASING_AUTONOMOUS);
+
+  EXPECT_CALL(mock_audio_hal_client_callbacks_,
+              OnGroupStreamStatus(group_id, GroupStreamStatus::STREAMING))
+          .Times(1);
+  state_machine_callbacks_->StatusReportCb(group_id, GroupStreamStatus::STREAMING);
+
+  EXPECT_CALL(mock_audio_hal_client_callbacks_,
+              OnGroupStreamStatus(group_id, GroupStreamStatus::IDLE))
+          .Times(1);
+  state_machine_callbacks_->StatusReportCb(group_id, GroupStreamStatus::SUSPENDING);
 
   EXPECT_CALL(mock_audio_hal_client_callbacks_,
               OnGroupStreamStatus(group_id, GroupStreamStatus::STREAMING))

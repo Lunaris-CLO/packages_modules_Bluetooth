@@ -2330,6 +2330,8 @@ void BTIF_dm_disable() {
  ******************************************************************************/
 void btif_dm_sec_evt(tBTA_DM_SEC_EVT event, tBTA_DM_SEC* p_data) {
   RawAddress bd_addr;
+  uint8_t auth_req = pairing_cb.auth_req;
+  uint8_t io_cap = pairing_cb.io_cap;
 
   log::verbose("ev:{}", dump_dm_event(event));
 
@@ -2365,6 +2367,9 @@ void btif_dm_sec_evt(tBTA_DM_SEC_EVT event, tBTA_DM_SEC* p_data) {
       GetInterfaceToProfiles()->removeDeviceFromProfiles(bd_addr);
       btif_storage_remove_bonded_device(&bd_addr);
       bond_state_changed(BT_STATUS_SUCCESS, bd_addr, BT_BOND_STATE_NONE);
+      log::info("Save the auth req {}, IO cap {} for incoming ssp", auth_req, io_cap);
+      pairing_cb.auth_req = auth_req;
+      pairing_cb.io_cap = io_cap;
       break;
 
     case BTA_DM_BLE_KEY_EVT:

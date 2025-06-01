@@ -184,7 +184,19 @@ struct AclScheduler::impl {
       pending_outgoing_operations_.pop_front();
       std::visit([](auto&& variant) { variant.callback(); }, entry);
       outgoing_entry_ = std::move(entry);
+    } else if (!pending_outgoing_operations_.empty()){
+      if (const RemoteNameRequestQueueEntry* peek =
+                  std::get_if<RemoteNameRequestQueueEntry>(&pending_outgoing_operations_.front())) {
+        if (incoming_connecting_address_set_.contains(peek->address)) {
+            log::info("Pending connections is RNR;so sending RNR");
+            auto entry = std::move(pending_outgoing_operations_.front());
+            pending_outgoing_operations_.pop_front();
+            std::visit([](auto&& variant) { variant.callback(); }, entry);
+            outgoing_entry_ = std::move(entry);
+        }
+      }
     }
+
   }
 
   template <typename T, typename U, typename V>

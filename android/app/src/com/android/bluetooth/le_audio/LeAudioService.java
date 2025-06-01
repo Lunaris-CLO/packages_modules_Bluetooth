@@ -2001,20 +2001,6 @@ public class LeAudioService extends ProfileService {
                         + (", isSink: " + isSink)
                         + (" isSource: " + isSource));
 
-        /* Don't expose already exposed active device */
-        if (device.equals(mExposedActiveDevice)) {
-            Log.d(TAG, " onAudioDevicesAdded: " + device + " is already exposed");
-            Log.d(TAG, " handleAudioDeviceAdded(): mCachedOpcode: " + mCachedOpcode);
-            TbsService tbsService = getTbsService();
-            if (tbsService != null && isSource && mCachedOpcode != -1) {
-                TbsGeneric tbsGeneric = tbsService.getTbsGeneric();
-                if (tbsGeneric != null) {
-                    tbsGeneric.processCallControlOp(device, mCachedOpcode, mCachedArgs);
-                }
-            }
-            return true;
-        }
-
         if ((isSink && !device.equals(mActiveAudioOutDevice))
                 || (isSource && !device.equals(mActiveAudioInDevice))) {
             Log.e(
@@ -2030,6 +2016,20 @@ public class LeAudioService extends ProfileService {
         }
 
         notifyActiveDeviceChanged(device);
+
+        /* Don't expose already exposed active device */
+        if (device.equals(mExposedActiveDevice)) {
+            Log.d(TAG, " onAudioDevicesAdded: " + device + " is already exposed");
+            Log.d(TAG, " handleAudioDeviceAdded(): mCachedOpcode: " + mCachedOpcode);
+            TbsService tbsService = getTbsService();
+            if (tbsService != null && isSource && mCachedOpcode != -1) {
+                TbsGeneric tbsGeneric = tbsService.getTbsGeneric();
+                if (tbsGeneric != null) {
+                    tbsGeneric.processCallControlOp(device, mCachedOpcode, mCachedArgs);
+                }
+            }
+            return true;
+        }
         mAudioManager.setA2dpSuspended(false);
         return true;
     }

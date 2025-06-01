@@ -74,9 +74,12 @@ public:
 
   void SetCsParams(RawAddress raw_address, int SightType, int LocationType,
                    int CsSecurityLevel, int Frequency, int Duration){
+
+    bluetooth::hci::Role local_hci_role;
+    uint16_t connection_handle = GetConnectionHandleAndRole(raw_address, &local_hci_role);
     bluetooth::shim::GetDistanceMeasurementManager()->SetCsParams(
-        bluetooth::ToGdAddress(raw_address), SightType, LocationType,
-	CsSecurityLevel, Frequency, Duration);
+        bluetooth::ToGdAddress(raw_address), connection_handle, SightType, LocationType,
+        CsSecurityLevel, Frequency, Duration);
   }
 
   void StartDistanceMeasurement(RawAddress identity_addr, uint16_t interval, uint8_t method) {

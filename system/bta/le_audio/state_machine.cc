@@ -2101,13 +2101,20 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
 
   static void ReleaseDataPath(LeAudioDeviceGroup* group) {
     LeAudioDevice* leAudioDevice = group->GetFirstActiveDevice();
-    log::assert_that(leAudioDevice,
-                     "Shouldn't be called without an active device.");
-
-    auto ase = leAudioDevice->GetFirstActiveAseByCisAndDataPathState(
+    while (leAudioDevice){
+      leAudioDevice->HaveAllActiveAsesCisEst();
+      leAudioDevice->HaveAllActiveAsesSameDataPathState(DataPathState::CONFIGURED);
+      auto ase = leAudioDevice->GetFirstActiveAseByCisAndDataPathState(
         CisState::CONNECTED, DataPathState::CONFIGURED);
-    log::assert_that(ase, "Shouldn't be called without an active ASE.");
-    RemoveDataPathByCisHandle(leAudioDevice, ase->cis_conn_hdl);
+      if (ase){
+        log::info("{} is the first device with active ase", leAudioDevice->address_);
+        RemoveDataPathByCisHandle(leAudioDevice, ase->cis_conn_hdl);
+        break;
+      } else {
+        log::info("{} has no active ase, search next device", leAudioDevice->address_);
+        leAudioDevice = group->GetNextActiveDevice(leAudioDevice);
+      }
+    }
   }
 
   static uint8_t audioContextToUseCase(const LeAudioContextType& context) {
@@ -2240,7 +2247,9 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
 
   LeAudioDevice* getDeviceTryingToAttachTheStream(LeAudioDeviceGroup* group) {
     /* Device which is attaching the stream is just an active device not in
-     * STREAMING state. the precondition is, that TargetState is Streaming  */
+     * STREAMING state and NOT in  the RELEASING state.
+     * The precondition is, that TargetState is Streaming
+     */
 
     log::debug("group_id: {}, targetState: {}", group->group_id_,
                ToString(group->GetTargetState()));
@@ -2251,8 +2260,8 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
 
     for (auto dev = group->GetFirstActiveDevice(); dev != nullptr;
          dev = group->GetNextActiveDevice(dev)) {
-      if (!dev->HaveAllActiveAsesSameState(
-              AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING)) {
+      if (!dev->HaveAllActiveAsesSameState(AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING) &&
+          !dev->HaveAnyReleasingAse()) {
         log::debug("Attaching device {} to group_id: {}", dev->address_,
                    group->group_id_);
         return dev;
@@ -3719,6 +3728,18 @@ class LeAudioGroupStateMachineImpl : public LeAudioGroupStateMachine {
           log::debug("Nothing to do ase data path state: {}",
                      static_cast<int>(ase->data_path_state));
         }
+
+        if (group->HaveAllActiveDevicesAsesTheSameState(
+                    AseState::BTA_LE_AUDIO_ASE_STATE_RELEASING)) {
+          group->SetState(AseState::BTA_LE_AUDIO_ASE_STATE_RELEASING);
+          if (group->GetTargetState() == AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING) {
+            log::info("Group {} is doing autonomous release", group->group_id_);
+            SetTargetState(group, AseState::BTA_LE_AUDIO_ASE_STATE_IDLE);
+            state_machine_callbacks_->StatusReportCb(group->group_id_,
+                                                     GroupStreamStatus::RELEASING_AUTONOMOUS);
+          }
+        }
+
         break;
       }
       default:

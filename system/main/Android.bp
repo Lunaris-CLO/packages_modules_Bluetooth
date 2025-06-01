@@ -226,6 +226,7 @@ cc_test {
         "libcrypto",
         "server_configurable_flags",
         "libxml2",
+        "libutils",
     ],
     sanitize: {
         address: true,
@@ -310,6 +311,7 @@ cc_test {
         "libcrypto",
         "server_configurable_flags",
         "libxml2",
+        "libutils",
     ],
     target: {
         linux: {

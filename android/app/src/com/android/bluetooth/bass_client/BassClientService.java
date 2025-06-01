@@ -1056,9 +1056,9 @@ public class BassClientService extends ProfileService {
         return devices;
     }
 
-    private boolean isValidBroadcastSourceAddition(
+    private int checkDuplicateSourceAdditionAndGetSourceId(
             BluetoothDevice device, BluetoothLeBroadcastMetadata metaData) {
-        boolean retval = true;
+        int sourceId = BassConstants.INVALID_SOURCE_ID;
         List<BluetoothLeBroadcastReceiveState> currentAllSources = getAllSources(device);
         for (int i = 0; i < currentAllSources.size(); i++) {
             BluetoothLeBroadcastReceiveState state = currentAllSources.get(i);
@@ -1066,17 +1066,13 @@ public class BassClientService extends ProfileService {
                     && metaData.getSourceAddressType() == state.getSourceAddressType()
                     && metaData.getSourceAdvertisingSid() == state.getSourceAdvertisingSid()
                     && metaData.getBroadcastId() == state.getBroadcastId()) {
-                retval = false;
-                Log.e(
-                        TAG,
-                        "isValidBroadcastSourceAddition: fail for "
-                                + device
-                                + " metaData: "
-                                + metaData);
+                sourceId = state.getSourceId();
+                log("DuplicatedSourceAddition: for " + device +
+                        " metaData: " + metaData + " sourceId: " + sourceId);
                 break;
             }
         }
-        return retval;
+        return sourceId;
     }
 
     private boolean hasRoomForBroadcastSourceAddition(BluetoothDevice device) {
@@ -2532,9 +2528,14 @@ public class BassClientService extends ProfileService {
                         device, sourceMetadata, BluetoothStatusCodes.ERROR_ALREADY_IN_TARGET_STATE);
                 continue;
             }
-            if (!hasRoomForBroadcastSourceAddition(device)) {
-                log("addSource: device has no room");
-                Integer sourceId = getSourceIdToRemove(device);
+            int dupSrcId = checkDuplicateSourceAdditionAndGetSourceId(device, sourceMetadata);
+            if (dupSrcId != BassConstants.INVALID_SOURCE_ID ||
+                    !hasRoomForBroadcastSourceAddition(device)) {
+                Integer sourceId = dupSrcId;
+                if (dupSrcId == BassConstants.INVALID_SOURCE_ID) {
+                    sourceId = getSourceIdToRemove(device);
+                }
+                log("addSource: device has no room or duplicate source added");
                 if (sourceId != BassConstants.INVALID_SOURCE_ID) {
                     sEventLogger.logd(
                             TAG,
@@ -2583,14 +2584,6 @@ public class BassClientService extends ProfileService {
                             sourceMetadata,
                             BluetoothStatusCodes.ERROR_REMOTE_NOT_ENOUGH_RESOURCES);
                 }
-                continue;
-            }
-            if (!isValidBroadcastSourceAddition(device, sourceMetadata)) {
-                log("addSource: not a valid broadcast source addition");
-                mCallbacks.notifySourceAddFailed(
-                        device,
-                        sourceMetadata,
-                        BluetoothStatusCodes.ERROR_LE_BROADCAST_ASSISTANT_DUPLICATE_ADDITION);
                 continue;
             }
             if ((code != null) && (code.length != 0)) {

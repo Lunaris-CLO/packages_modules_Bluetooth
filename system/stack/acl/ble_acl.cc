@@ -170,7 +170,14 @@ void acl_ble_update_event_received(tHCI_STATUS status, uint16_t handle,
 
   tBTM_SEC_DEV_REC* p_dev_rec = btm_find_dev_by_handle(handle);
 
-  if (!p_dev_rec) return;
+  if (p_dev_rec) {
+    p_dev_rec->conn_params.peripheral_latency = latency;
+    p_dev_rec->conn_params.min_conn_int = interval;
+    p_dev_rec->conn_params.max_conn_int = interval;
+    p_dev_rec->conn_params.supervision_tout = timeout;
+  } else {
+    return;
+  }
 
   gatt_notify_conn_update(p_dev_rec->ble.pseudo_addr, interval, latency,
                           timeout, status);

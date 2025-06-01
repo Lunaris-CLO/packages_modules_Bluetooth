@@ -217,7 +217,8 @@ struct RemoteNameRequestModule::impl {
       return;
     }
     auto status = packet.GetStatus();
-    if (status != ErrorCode::SUCCESS) {
+    if ((status != ErrorCode::SUCCESS)
+      && (status != ErrorCode::INVALID_HCI_COMMAND_PARAMETERS)) {
       completed(status, std::array<uint8_t, 248>{}, packet.GetBdAddr());
     }
   }

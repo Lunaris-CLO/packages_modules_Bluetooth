@@ -362,6 +362,21 @@ bool l2c_link_hci_disc_comp(uint16_t handle, tHCI_REASON reason) {
       /* for LE link, always drop and re-open to ensure to get LE remote feature
        */
       if (p_lcb->transport == BT_TRANSPORT_LE) {
+        /* If we are going to re-use the LCB without dropping it, release all
+        fixed channels
+        here */
+        int xx;
+        for (xx = 0; xx < L2CAP_NUM_FIXED_CHNLS; xx++) {
+          if (p_lcb->p_fixed_ccbs[xx] &&
+              p_lcb->p_fixed_ccbs[xx] != p_lcb->p_pending_ccb) {
+            l2cu_release_ccb(p_lcb->p_fixed_ccbs[xx]);
+
+            p_lcb->p_fixed_ccbs[xx] = NULL;
+            (*l2cb.fixed_reg[xx].pL2CA_FixedConn_Cb)(
+                xx + L2CAP_FIRST_FIXED_CHNL, p_lcb->remote_bd_addr, false,
+                p_lcb->DisconnectReason(), p_lcb->transport);
+          }
+        }
         btm_acl_removed(handle);
         p_lcb->InvalidateHandle();
       } else {

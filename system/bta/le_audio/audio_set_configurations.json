@@ -682,6 +682,13 @@
             ]
         },
         {
+            "name": "VND_One-OneChan-SnkAse-Lc3_24khz_HapLe_60octs_R2_L10",
+            "codec_config_name": "One-OneChan-SnkAse-Lc3_24_2",
+            "qos_config_name": [
+                "QoS_Config_24_2_1"
+            ]
+        },
+        {
             "name": "Two-OneChan-SnkAse-Lc3_24_2_Balanced_Reliability",
             "codec_config_name": "Two-OneChan-SnkAse-Lc3_24_2",
             "qos_config_name": [

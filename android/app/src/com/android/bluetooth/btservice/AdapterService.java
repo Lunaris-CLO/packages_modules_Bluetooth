@@ -841,6 +841,14 @@ public class AdapterService extends Service {
         return mSilenceDeviceManager;
     }
 
+    public GattService getGattService() {
+        return mGattService;
+    }
+
+    public ScanController getScanController() {
+        return mScanController;
+    }
+
     private boolean initMetricsLogger() {
         if (mMetricsLogger != null) {
             return false;
@@ -5935,6 +5943,33 @@ public class AdapterService extends Service {
 
     public Vendor getVendorIntf() {
         return mVendor;
+    }
+
+    /**
+     * Check whether Split A2DP Source LDAC  enabled.
+     *
+     * @return true if Split A2DP Source LDAC  is enabled
+     */
+    public boolean isSplitA2DPSourceLDAC() {
+        return mVendor.isSplitA2DPSourceLDAC();
+    }
+
+    /**
+     * Check whether Split A2DP Source APTX HD  enabled.
+     *
+     * @return true if Split A2DP Source APTX HD  is enabled
+     */
+    public boolean isSplitA2DPSourceAPTXHD() {
+        return mVendor.isSplitA2DPSourceAPTXHD();
+    }
+
+    /**
+     * Check whether Split A2DP Source APTX ADAPTIVE  enabled.
+     *
+     * @return true if Split A2DP Source APTX ADAPTIVE  is enabled
+     */
+    public boolean isSplitA2DPSourceAPTXADAPTIVE() {
+        return mVendor.isSplitA2DPSourceAPTXADAPTIVE();
     }
 
     @VisibleForTesting

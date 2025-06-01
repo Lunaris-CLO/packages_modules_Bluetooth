@@ -567,7 +567,7 @@ static void bta_dm_pm_cback(tBTA_SYS_CONN_STATUS status, const tBTA_SYS_ID id,
       if (status == BTA_SYS_SCO_OPEN) {
         log::verbose("SCO inactive, reset SSR to zero");
         if (get_btm_client_interface().link_policy.BTM_SetSsrParams(
-                peer_addr, 0, 0, 0) != BTM_SUCCESS) {
+                peer_addr, 2, 0, 0) != BTM_SUCCESS) {
           log::warn("Unable to set link into sniff mode peer:{}", peer_addr);
         }
       } else if (status == BTA_SYS_SCO_CLOSE) {

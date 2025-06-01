@@ -110,7 +110,7 @@ public:
                                  uint16_t conn_interval);
 
   static const ModuleFactory Factory;
-  void SetCsParams(const Address&, int mSightType, int mLocationType,
+  void SetCsParams(const Address&, uint16_t connection_handle, int mSightType, int mLocationType,
                    int mCsSecurityLevel, int mFrequency, int mDuration);
 protected:
   void ListDependencies(ModuleList* list) const override;

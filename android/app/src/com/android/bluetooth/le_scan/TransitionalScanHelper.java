@@ -236,6 +236,10 @@ public class TransitionalScanHelper {
         return mScanManager.getCurrentUsedTrackingAdvertisement();
     }
 
+    public void setAptXLowLatencyMode(boolean enabled) {
+        mScanManager.setAptXLowLatencyMode(enabled);
+    }
+
     /**************************************************************************
      * Callback functions - CLIENT
      *************************************************************************/

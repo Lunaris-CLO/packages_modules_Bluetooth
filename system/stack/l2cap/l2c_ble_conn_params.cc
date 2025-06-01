@@ -75,8 +75,8 @@ bool L2CA_UpdateBleConnParams(const RawAddress& rem_bda, uint16_t min_int,
   }
 
   log::verbose(
-      "BD_ADDR={}, min_int={}, max_int={}, min_ce_len={}, max_ce_len={}",
-      rem_bda, min_int, max_int, min_ce_len, max_ce_len);
+      "BD_ADDR={}, min_int={}, max_int={}, min_ce_len={}, max_ce_len={}, latency: {}, conn_update_mask: {}",
+      rem_bda, min_int, max_int, min_ce_len, max_ce_len, latency, p_lcb->conn_update_mask);
 
   p_lcb->min_interval = min_int;
   p_lcb->max_interval = max_int;

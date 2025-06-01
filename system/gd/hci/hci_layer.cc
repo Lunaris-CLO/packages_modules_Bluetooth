@@ -276,7 +276,6 @@ struct HciLayer::impl {
     if (hci_timeout_alarm_ != nullptr) {
       hci_timeout_alarm_->Cancel();
       {
-        log::warn("Stop monitoring events!");
         std::unique_lock<std::mutex> lock(module_.monitor_cmd_stats);
         memset(&module_.cmd_stats, 0, sizeof(struct monitor_command));
         module_.cmd_stats.no_packets_rx = 0;
@@ -363,7 +362,6 @@ struct HciLayer::impl {
       hci_timeout_alarm_->Schedule(BindOnce(&impl::on_hci_timeout, common::Unretained(this), op_code), kHciTimeoutMs);
       // Start monitoring incoming events.
       {
-        log::warn("Start monitoring events!");
         std::unique_lock<std::mutex> lock(module_.monitor_cmd_stats);
         memset(&module_.cmd_stats, 0, sizeof(struct monitor_command));
         module_.cmd_stats.no_packets_rx = 0;
