@@ -1429,7 +1429,8 @@ void bta_ag_at_hfp_cback(tBTA_AG_SCB* p_scb, uint16_t cmd, uint8_t arg_type,
       break;
     }
     case BTA_AG_LOCAL_EVT_BCC: {
-      if (!bta_ag_is_call_present(&p_scb->peer_addr)) {
+      if (!osi_property_get_bool("vendor.bt.pts.certification", false) &&
+          !bta_ag_is_call_present(&p_scb->peer_addr)) {
         log::warn(
             "NOT opening SCO for EVT {} as {} does not have call, call setup",
             "BTA_AG_LOCAL_EVT_BCC", p_scb->peer_addr.ToStringForLogging());

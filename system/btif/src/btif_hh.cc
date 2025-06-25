@@ -715,6 +715,20 @@ void btif_hh_remove_device(const tAclLinkSpec& link_spec) {
         },
          p_dev->link_spec));
   }
+  if ((btif_hh_cb.pending_link_spec.addrt.bda == link_spec.addrt.bda) &&
+         (btif_hh_cb.status == BTIF_HH_DEV_CONNECTING)) {
+       log::warn("reset pending connection status");
+       btif_hh_cb.status = (BTIF_HH_STATUS)BTIF_HH_DEV_DISCONNECTED;
+       btif_hh_cb.pending_link_spec = {};
+       /* need to notify up-layer device is disconnected to avoid
+        * state out of sync with up-layer */
+       do_in_jni_thread(base::Bind(
+           [](tAclLinkSpec link_spec) {
+             BTHH_STATE_UPDATE(link_spec, BTHH_CONN_STATE_DISCONNECTED);
+           },
+           link_spec));
+   }
+
 }
 
 bool btif_hh_copy_hid_info(tBTA_HH_DEV_DSCP_INFO* dest,

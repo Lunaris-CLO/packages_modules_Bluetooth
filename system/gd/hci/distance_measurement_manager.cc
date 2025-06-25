@@ -885,7 +885,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
        preferred_peer_antenna.use_third_ordered_antenna_element_ = 1;
      if (procedure_setting.preferred_peer_antenna & 0x08)
        preferred_peer_antenna.use_fourth_ordered_antenna_element_ = 1;
-     
+
       hci_layer_->EnqueueCommand(
             LeCsSetProcedureParametersBuilder::Create(
             connection_handle,
@@ -1103,9 +1103,13 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
                                           req_it->second.remote_num_antennas_supported_);
     }
     auto res_it = cs_responder_trackers_.find(connection_handle);
-    if (res_it != cs_responder_trackers_.end() &&
-        res_it->second.state == CsTrackerState::WAIT_FOR_SECURITY_ENABLED) {
-      res_it->second.state = CsTrackerState::WAIT_FOR_PROCEDURE_ENABLED;
+    if (res_it != cs_responder_trackers_.end()) {
+
+      if (res_it->second.state == CsTrackerState::WAIT_FOR_SECURITY_ENABLED) {
+        res_it->second.state = CsTrackerState::WAIT_FOR_PROCEDURE_ENABLED;
+      } else {
+        res_it->second.state = CsTrackerState::WAIT_FOR_SECURITY_ENABLED;
+      }
     }
   }
 
@@ -1185,7 +1189,11 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     }
     // TODO: else set a timeout alarm to make sure the remote would trigger the cmd.
     if (!live_tracker->local_start) {
-      live_tracker->state = CsTrackerState::WAIT_FOR_SECURITY_ENABLED;
+      if (live_tracker->state == CsTrackerState::WAIT_FOR_SECURITY_ENABLED) {
+        live_tracker->state = CsTrackerState::WAIT_FOR_PROCEDURE_ENABLED;
+      } else {
+        live_tracker->state = CsTrackerState::WAIT_FOR_SECURITY_ENABLED;
+      }
     }
   }
 
@@ -1407,7 +1415,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       procedure_abort_reason = cs_event_result.GetProcedureAbortReason();
       subevent_abort_reason = cs_event_result.GetSubeventAbortReason();
       result_data_structures = cs_event_result.GetResultDataStructures();
-      
+
       if (live_tracker == nullptr) {
         log::warn("Can't find any tracker for {}", connection_handle);
         return;
@@ -2016,6 +2024,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       if (ranging_hal_->IsBound()) {
         // Use algorithm in the HAL
         bluetooth::hal::ChannelSoundingRawData raw_data;
+        raw_data.procedure_counter_ = live_tracker->procedure_counter;
         raw_data.step_mode_ = procedure_data->step_mode;
         raw_data.measured_freq_offset_= procedure_data->measured_freq_offset;
         raw_data.init_packet_rssi_ = procedure_data->rssi_initiator;
@@ -2089,8 +2098,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
         for (uint32_t i=0;i<num_AntPIs;i++) {
           raw_data.vendor_specific_cs_single_side_data.push_back(procedure_data->antenna_permutation_index_initiator[i]);
         }
-        
-        
+
+
         struct timeval tv;
 	    gettimeofday(&tv, NULL);
 	    curr_proc_complete_timestampMs  = tv.tv_sec*1e6*1ll + tv.tv_usec*1ll;
@@ -2103,7 +2112,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
 
         log::verbose("Vendor Specific data : [{}]",
             fmt::join(raw_data.vendor_specific_cs_single_side_data, ", "));
-        ranging_hal_->WriteRawData(connection_handle, raw_data); 
+        ranging_hal_->WriteRawData(connection_handle, raw_data);
       }
     }
 

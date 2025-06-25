@@ -34,6 +34,7 @@ struct VendorSpecificCharacteristic {
 };
 
 struct ChannelSoundingRawData {
+  uint16_t procedure_counter_;
   uint8_t num_antenna_paths_;
   long timestampMs_;
   std::vector<uint16_t> step_mode_;

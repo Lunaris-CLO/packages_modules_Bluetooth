@@ -2001,6 +2001,20 @@ public class LeAudioService extends ProfileService {
                         + (", isSink: " + isSink)
                         + (" isSource: " + isSource));
 
+        /* Don't expose already exposed active device */
+        if (device.equals(mExposedActiveDevice)) {
+            Log.d(TAG, " onAudioDevicesAdded: " + device + " is already exposed");
+            Log.d(TAG, " handleAudioDeviceAdded(): mCachedOpcode: " + mCachedOpcode);
+            TbsService tbsService = getTbsService();
+            if (tbsService != null && isSource && mCachedOpcode != -1) {
+                TbsGeneric tbsGeneric = tbsService.getTbsGeneric();
+                if (tbsGeneric != null) {
+                    tbsGeneric.processCallControlOp(device, mCachedOpcode, mCachedArgs);
+                }
+            }
+            return true;
+        }
+
         if ((isSink && !device.equals(mActiveAudioOutDevice))
                 || (isSource && !device.equals(mActiveAudioInDevice))) {
             Log.e(
@@ -2016,20 +2030,6 @@ public class LeAudioService extends ProfileService {
         }
 
         notifyActiveDeviceChanged(device);
-
-        /* Don't expose already exposed active device */
-        if (device.equals(mExposedActiveDevice)) {
-            Log.d(TAG, " onAudioDevicesAdded: " + device + " is already exposed");
-            Log.d(TAG, " handleAudioDeviceAdded(): mCachedOpcode: " + mCachedOpcode);
-            TbsService tbsService = getTbsService();
-            if (tbsService != null && isSource && mCachedOpcode != -1) {
-                TbsGeneric tbsGeneric = tbsService.getTbsGeneric();
-                if (tbsGeneric != null) {
-                    tbsGeneric.processCallControlOp(device, mCachedOpcode, mCachedArgs);
-                }
-            }
-            return true;
-        }
         mAudioManager.setA2dpSuspended(false);
         return true;
     }
@@ -2114,10 +2114,8 @@ public class LeAudioService extends ProfileService {
                 if (deviceInfo.isSink()) {
                     mAudioManagerAddedOutDevice = device;
                 }
-                if (handleAudioDeviceAdded(
-                        device, deviceInfo.getType(), deviceInfo.isSink(), deviceInfo.isSource())) {
-                    return;
-                }
+                handleAudioDeviceAdded(device, deviceInfo.getType(),
+                                            deviceInfo.isSink(), deviceInfo.isSource());
             }
         }
 
@@ -3327,6 +3325,7 @@ public class LeAudioService extends ProfileService {
                         case LeAudioStackEvent.CONNECTION_STATE_DISCONNECTING:
                         case LeAudioStackEvent.CONNECTION_STATE_DISCONNECTED:
                             deviceDescriptor.mAclConnected = false;
+                            setDisconnected(true);
                             synchronized(mScanCallbackLock) {
                                 Log.d(TAG, " try to start background scan");
                                 startAudioServersBackgroundScan(/* retry= */ false);
@@ -4439,7 +4438,7 @@ public class LeAudioService extends ProfileService {
         }
     }
 
-    public void setInactiveForBroadcast() {
+    public void setInactiveForBroadcast(boolean blocking) {
         Log.d(TAG, "setInactiveForBroadcast");
         if (!isBroadcastActive()) {
             Log.d(TAG, "setInactiveForBroadcast: broadcast is inactive");
@@ -4451,6 +4450,11 @@ public class LeAudioService extends ProfileService {
             Log.d(TAG, "setInactiveForBroadcast: stop broadcast now");
             updateFallbackUnicastGroupIdForBroadcast(LE_AUDIO_GROUP_ID_INVALID);
             stopBroadcast(broadcastId.get());
+            if (!blocking) {
+                updateBroadcastActiveDevice(null, mActiveBroadcastAudioDevice, true);
+                Log.d(TAG, "No need Waiting for broadcast to stop");
+                return;
+            }
             suspendLeAudioStream();
             Log.d(TAG, "Wait for broadcast to stop");
             int waitCount = SystemProperties.getInt(

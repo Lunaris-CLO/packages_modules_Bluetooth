@@ -611,7 +611,7 @@ public class HearingAidService extends ProfileService {
             LeAudioService leAudioService = mFactory.getLeAudioService();
             if (leAudioService != null) {
                 Log.i(TAG, "Make sure there is no broadcast active.");
-                leAudioService.setInactiveForBroadcast();
+                leAudioService.setInactiveForBroadcast(false);
             }
 
             Long deviceHiSyncId =

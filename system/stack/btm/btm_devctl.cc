@@ -48,6 +48,7 @@
 #include "stack/include/hcidefs.h"
 #include "stack/include/l2cap_controller_interface.h"
 #include "types/raw_address.h"
+#include "btif/include/stack_manager_t.h"
 
 using namespace bluetooth;
 
@@ -397,6 +398,11 @@ tBTM_STATUS BTM_ReadLocalDeviceNameFromController(
 void btm_read_local_name_complete(uint8_t* p, uint16_t /* evt_len */) {
   tBTM_CMPL_CB* p_cb = btm_cb.devcb.p_rln_cmpl_cb;
   uint8_t status;
+
+  if (!stack_manager_get_interface()->get_stack_is_running()) {
+    log::warn("stack is not running");
+    return;
+  }
 
   alarm_cancel(btm_cb.devcb.read_local_name_timer);
 

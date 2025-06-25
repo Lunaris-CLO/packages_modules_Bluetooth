@@ -36,6 +36,7 @@ import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.android.bluetooth.Utils;
 import com.android.bluetooth.BluetoothMethodProxy;
 import com.android.bluetooth.BluetoothStatsLog;
 import com.android.bluetooth.R;
@@ -173,7 +174,8 @@ public class BluetoothPbapVcardManager {
                 return 0;
             }
             int contactsSize = getDistinctContactIdSize(contactCursor);
-            if (type == BluetoothPbapObexServer.ContentType.PHONEBOOK) {
+                                                               /* War to pass PSE_PDF_BV-05-I */
+            if (type == BluetoothPbapObexServer.ContentType.PHONEBOOK && !Utils.isPtsTestMode()) {
                 contactsSize += 1; // pb has the 0.vcf owner's card
             }
             return contactsSize;

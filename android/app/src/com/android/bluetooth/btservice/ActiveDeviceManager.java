@@ -1425,7 +1425,7 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
         if (leAudioService == null) {
             return false;
         }
-        leAudioService.setInactiveForBroadcast();
+        leAudioService.setInactiveForBroadcast(true);
         return true;
     }
 

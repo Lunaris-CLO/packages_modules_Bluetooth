@@ -1522,6 +1522,12 @@ bool LeAudioDeviceGroup::IsAudioSetConfigurationSupported(
         continue;
       }
 
+      /* Skip if device has not been connected */
+      if (device->GetConnectionState() != DeviceConnectState::CONNECTED) {
+        log::error("Device is not connected");
+        continue;
+      }
+
       bool match = false;
       for (auto& ase_ : device->ases_) {
         if (ase_.direction == direction) {

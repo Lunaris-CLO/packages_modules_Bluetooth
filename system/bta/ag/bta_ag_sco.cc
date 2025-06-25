@@ -724,6 +724,7 @@ void bta_ag_codec_negotiate(tBTA_AG_SCB* p_scb) {
       !(p_scb->peer_features & BTA_AG_PEER_FEAT_CODEC)) {
     log::info("Assume CVSD by default due to mask mismatch");
     p_scb->sco_codec = UUID_CODEC_CVSD;
+    p_scb->is_aptx_swb_codec = false;
   }
   const bool aptx_voice =
       is_hfp_aptx_voice_enabled() &&

@@ -505,7 +505,7 @@
 
 /* The maximum number of simultaneous client and server connections. */
 #ifndef SDP_MAX_CONNECTIONS
-#define SDP_MAX_CONNECTIONS 10
+#define SDP_MAX_CONNECTIONS 16
 #endif
 
 /* The MTU size for the L2CAP configuration. */

@@ -237,6 +237,7 @@ class RangingHalAndroid : public RangingHal {
     std::vector<Nadm> packetNadmReflector_;
     std::vector<int> toaTodInitiator_;
     std::vector<int> todToaReflector_;
+    hal_raw_data.procedureCounter = raw_data.procedure_counter_;
     hal_raw_data.numAntennaPaths = raw_data.num_antenna_paths_;
     hal_raw_data.stepChannels = raw_data.step_channel_;
     hal_raw_data.initiatorData.stepTonePcts.emplace(std::vector<std::optional<StepTonePct>>{});

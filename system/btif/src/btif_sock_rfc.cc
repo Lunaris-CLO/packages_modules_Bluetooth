@@ -687,6 +687,10 @@ static uint32_t rfcomm_cback(tBTA_JV_EVT event, tBTA_JV* p_data,
                              uint32_t rfcomm_slot_id) {
   uint32_t id = 0;
 
+  if (rfcomm_slot_id == 0) {
+    log::info("invalid rfcomm_slot_id");
+    return id;
+  }
   switch (event) {
     case BTA_JV_RFCOMM_START_EVT:
       log::info("handling {}, rfcomm_slot_id:{}", bta_jv_event_text(event),

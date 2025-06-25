@@ -1751,7 +1751,7 @@ void bta_dm_ble_csis_observe(bool observe, tBTA_DM_SEARCH_CBACK* p_cback) {
 }
 
 #ifndef BTA_DM_GATT_CLOSE_DELAY_TOUT
-#define BTA_DM_GATT_CLOSE_DELAY_TOUT 1000
+#define BTA_DM_GATT_CLOSE_DELAY_TOUT 5000
 #endif
 
 /*******************************************************************************

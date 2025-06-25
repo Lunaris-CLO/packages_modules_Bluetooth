@@ -1028,7 +1028,13 @@ void Device::AddressedPlayerNotificationResponse(
   if (!interim) {
     active_labels_.erase(label);
     addr_player_changed_ = Notification(false, 0);
-    RejectNotification();
+    bool is_pts_enable = osi_property_get_bool("persist.vendor.bt.a2dp.pts_enable",
+                                             false);
+    log::info("is_pts_enable: {}", is_pts_enable);
+    if (is_pts_enable) {
+      log::info("Reject pending Notifications");
+      RejectNotification();
+    }
   }
 }
 

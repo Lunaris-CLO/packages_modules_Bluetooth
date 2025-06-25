@@ -172,7 +172,8 @@ static void sdp_config_cfm(uint16_t l2cap_cid, uint16_t /* initiator */,
     sdp_disc_connected(p_ccb);
   } else {
     /* Start inactivity timer */
-    alarm_set_on_mloop(p_ccb->sdp_conn_timer, SDP_INACT_TIMEOUT_MS,
+    if (p_ccb->sdp_conn_timer)
+        alarm_set_on_mloop(p_ccb->sdp_conn_timer, SDP_INACT_TIMEOUT_MS,
                        sdp_conn_timer_timeout, p_ccb);
   }
 }
@@ -313,7 +314,7 @@ tCONN_CB* sdp_conn_originate(const RawAddress& bd_addr) {
  ******************************************************************************/
 void sdp_disconnect(tCONN_CB* p_ccb, tSDP_REASON reason) {
   tCONN_CB& ccb = *p_ccb;
-  log::verbose("SDP - disconnect  CID: 0x{:x}", ccb.connection_id);
+  log::info("SDP - disconnect  CID: 0x{:x},con_state{}", ccb.connection_id, ccb.con_state);
 
   /* Check if we have a connection ID */
   if (ccb.connection_id != 0) {
